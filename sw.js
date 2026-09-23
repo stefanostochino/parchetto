@@ -1,7 +1,7 @@
 // Parchetto: prima di tutto offline.
 // L'app si apre sempre dalla copia salvata sul telefono (istantanea, anche senza segnale).
 // Se c'è internet, in sottofondo scarica l'eventuale versione nuova per la volta successiva.
-const CACHE = "parchetto-v2";
+const CACHE = "parchetto-v3";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon.svg", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png", "./fonts/Barlow-Medium.ttf", "./fonts/Barlow-Regular.ttf", "./fonts/Barlow-SemiBold.ttf", "./fonts/BarlowCondensed-Bold.ttf", "./fonts/BarlowCondensed-ExtraBold.ttf"];
 
 self.addEventListener("install", (e) => {

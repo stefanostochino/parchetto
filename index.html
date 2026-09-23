@@ -362,6 +362,15 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 190px}
 .navbtn[aria-selected="true"]{color:var(--accent)}
 .switch{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;cursor:pointer}
 .switch input{width:22px;height:22px;accent-color:var(--accent)}
+.bkbanner{background:var(--card);border:1.5px solid var(--line);border-left:5px solid var(--done);border-radius:14px;padding:12px 14px;margin:0 0 16px}
+.bkbanner[hidden]{display:none}
+.bkbanner b{font-family:var(--display);font-weight:800;font-size:20px}
+.bkbanner p{margin:4px 0 10px;font-size:14px;color:var(--muted)}
+.bkb-acts{display:flex;gap:8px}
+.bkb-yes,.bkb-no{appearance:none;flex:1;border:none;border-radius:11px;padding:12px 10px;font-weight:700;font-size:15px;cursor:pointer;min-height:46px;color:#fff}
+.bkb-yes{background:#16a34a}
+.bkb-no{background:#dc2626}
+.bkb-yes:active,.bkb-no:active{filter:brightness(.9)}
 .toast{position:fixed;left:50%;bottom:calc(128px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion: reduce){.timer,.switch{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;cursor:pointer}
@@ -382,6 +391,14 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 190px}
 </div>
 
 <main>
+  <div class="bkbanner" id="bk-banner" role="region" aria-label="Promemoria backup" hidden>
+    <div class="bkb-top"><b>Backup settimanale</b></div>
+    <p id="bk-banner-text"></p>
+    <div class="bkb-acts">
+      <button class="bkb-yes" id="bk-banner-yes" type="button">✓ Fai il backup</button>
+      <button class="bkb-no" id="bk-banner-no" type="button">✕ Non ora</button>
+    </div>
+  </div>
   <!-- ALLENAMENTI -->
   <section class="view active" id="view-workout" aria-label="Allenamento">
     <p class="intro" id="workout-intro"></p>
@@ -667,7 +684,10 @@ function renderTabs(){
     b.appendChild(document.createTextNode(w.name));
     b.addEventListener('click', function(){ renderWorkout(w.id); });
     box.appendChild(b);
-    if(w.id === currentId) setTimeout(function(){ b.scrollIntoView({inline:'nearest', block:'nearest'}); }, 0);
+    if(w.id === currentId) setTimeout(function(){
+      var l = b.offsetLeft - box.offsetLeft, r = l + b.offsetWidth;
+      if(l < box.scrollLeft) box.scrollLeft = l - 16; else if(r > box.scrollLeft + box.clientWidth) box.scrollLeft = r - box.clientWidth + 16;
+    }, 0);
   });
 }
 
@@ -1307,13 +1327,7 @@ function renderSettings(){
     var n = 0; store.history.forEach(function(h){ if(!h.eventId){ n++; var was = store.settings.autoCal; store.settings.autoCal = true; syncToPhone(h); store.settings.autoCal = was; } });
     toast(n ? 'Invio ' + n + ' allenamenti al calendario…' : 'Sono già tutti nel calendario');
   });
-  document.getElementById('bk-copy').addEventListener('click', function(){
-    var txt = 'PARCHETTO-BACKUP ' + JSON.stringify({history:store.history, custom:store.custom, log:store.log, vsel:store.vsel});
-    if(NATIVE){ try { NATIVE.share(txt); } catch(e){} return; }
-    var done = function(){ toast('Backup copiato: incollalo nell’app Android o salvalo in una nota'); };
-    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt) ? done() : toast('Copia non riuscita'); });
-    else if(fallbackCopy(txt)) done(); else toast('Copia non riuscita');
-  });
+  document.getElementById('bk-copy').addEventListener('click', doBackup);
   document.getElementById('bk-open').addEventListener('click', function(){ var r = document.getElementById('bk-restore'); r.hidden = !r.hidden; });
   document.getElementById('bk-do').addEventListener('click', function(){
     var raw = document.getElementById('bk-text').value.trim().replace(/^PARCHETTO-BACKUP\s*/, '');
@@ -1328,6 +1342,51 @@ function renderSettings(){
   });
   paintSettings();
 }
+function backupText(){ return 'PARCHETTO-BACKUP ' + JSON.stringify({history:store.history, custom:store.custom, log:store.log, vsel:store.vsel}); }
+function markBackup(){ store.settings.lastBackup = Date.now(); store.settings.lastPrompt = Date.now(); save(); hideBackupBanner(); }
+function doBackup(){
+  var txt = backupText();
+  if(NATIVE){ try { NATIVE.share(txt); markBackup(); } catch(e){} return; }
+  if(navigator.share){
+    navigator.share({title:'Backup Parchetto', text:txt}).then(function(){ markBackup(); toast('Backup salvato'); }, function(err){
+      if(err && err.name === 'AbortError') return;
+      copyBackup(txt);
+    });
+    return;
+  }
+  copyBackup(txt);
+}
+function copyBackup(txt){
+  var done = function(){ markBackup(); toast('Backup copiato: incollalo in una nota o in un messaggio a te stesso'); };
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function(){ fallbackCopy(txt) ? done() : toast('Copia non riuscita'); });
+  else if(fallbackCopy(txt)) done(); else toast('Copia non riuscita');
+}
+
+/* ---------- promemoria backup settimanale ---------- */
+var WEEK = 7 * 24 * 3600 * 1000;
+function hasData(){ return store.history.length > 0 || Object.keys(store.log).length > 0 || store.custom.length > 0; }
+function backupDue(){
+  if(!hasData()) return false;
+  var last = Math.max(store.settings.lastBackup || 0, store.settings.lastPrompt || 0, store.settings.firstSeen || 0);
+  return Date.now() - last >= WEEK;
+}
+function hideBackupBanner(){ var b = document.getElementById('bk-banner'); if(b) b.hidden = true; }
+function showBackupBanner(){
+  if(!backupDue()) return;
+  var b = document.getElementById('bk-banner'); if(!b) return;
+  var last = store.settings.lastBackup;
+  var days = last ? Math.floor((Date.now() - last) / 86400000) : null;
+  document.getElementById('bk-banner-text').textContent = last
+    ? 'L’ultimo backup è di ' + days + ' giorni fa. Salva i tuoi allenamenti: se cambi telefono o cancelli i dati del browser li ritrovi.'
+    : 'Non hai ancora fatto un backup. Salva i tuoi allenamenti: se cambi telefono o cancelli i dati del browser li ritrovi.';
+  b.hidden = false;
+}
+document.getElementById('bk-banner-yes').addEventListener('click', doBackup);
+document.getElementById('bk-banner-no').addEventListener('click', function(){
+  store.settings.lastPrompt = Date.now(); save(); hideBackupBanner(); toast('Ok, te lo ricordo tra una settimana');
+});
+if(!store.settings.firstSeen){ store.settings.firstSeen = Date.now(); save(); }
+
 function paintSettings(){ var ac = document.getElementById('set-autocal'); if(ac) ac.checked = !!store.settings.autoCal; }
 function fallbackCopy(txt){
   var ta = document.createElement('textarea'); ta.value = txt; ta.setAttribute('readonly',''); ta.style.position = 'fixed'; ta.style.opacity = '0';
@@ -1406,6 +1465,7 @@ document.getElementById('tstop').addEventListener('click', stopTimer);
 
 /* ================= AVVIO ================= */
 editorDate.max = todayISO();
+showBackupBanner();
 renderLibCats();
 renderWorkout('day1');
 if(NATIVE){ try { NATIVE.setKeepScreenOn(true); } catch(e){} }
