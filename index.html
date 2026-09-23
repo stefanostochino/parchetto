@@ -371,6 +371,23 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 190px}
 .bkb-yes{background:#16a34a}
 .bkb-no{background:#dc2626}
 .bkb-yes:active,.bkb-no:active{filter:brightness(.9)}
+.chip.edit{cursor:pointer;font-family:inherit;color:var(--ink);position:relative;padding-right:22px}
+.chip.edit::after{content:'✎';position:absolute;right:7px;top:50%;transform:translateY(-50%);font-size:11px;opacity:.55}
+.chip.edit.iso{color:var(--iso-ink)}
+.chip.edit:active{transform:scale(.97)}
+.edithint{font-size:12.5px;color:var(--muted);margin:-4px 0 10px}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.prow.all{background:var(--fig-bg);border-radius:10px;padding:10px;border:none;margin-bottom:4px}
+.prow .pl{font-weight:600;font-size:15px}
+.prow select{font-size:15px;font-weight:600;border:1.5px solid var(--line);background:var(--card);border-radius:9px;padding:6px 8px;height:38px}
+.ptotal{margin-top:12px;font-size:15px}
+.pchg{color:var(--muted);font-size:13px;margin-left:6px}
+.tglist{margin:12px 0 0;background:var(--fig-bg);border-radius:12px;padding:10px 12px;font-size:14px}
+.tglist .tg{display:grid;grid-template-columns:70px 1fr auto;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.tglist .tg:first-of-type{margin-top:6px}
+.tgd{display:block;color:var(--muted);font-size:12.5px}
+.tg .up{color:var(--done);font-weight:700}
+.tg .down{color:var(--l4);font-weight:700}
 .toast{position:fixed;left:50%;bottom:calc(128px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90%;text-align:center}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion: reduce){.timer,.switch{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15px;cursor:pointer}
@@ -535,16 +552,17 @@ function todayISO(){ return iso(new Date()); }
 function dparse(s){ return new Date(s + 'T00:00:00'); }
 
 /* ================= ALLENAMENTI PREDEFINITI ================= */
+function P(n, label, k){ var o = []; for(var i = 0; i < (k || 1); i++) o.push({n:n, label:label}); return o; }
 var STANDARD = [
-  {title:'Riscaldamento', sub:'5 set · australian + push up', ex:'australian', figs:['australian','push_up'], chain:['5 australian','5 push up'], sets:5, mode:'reps', value:10, rest:60, nolog:true,
+  {title:'Riscaldamento', sub:'australian + push up', ex:'australian', figs:['australian','push_up'], parts:[{n:5,label:'australian'},{n:5,label:'push up'}], sets:5, mode:'reps', rest:60, nolog:true,
    hint:'1 min tra una serie e l’altra. Poi 2 min prima dei push up.'},
-  {title:'Push up + ISO', sub:'5 set', ex:'push_up', chain:['10 push up','ISO','10 push up','ISO','10 push up','ISO'], sets:5, mode:'reps', value:30, rest:60,
-   hint:'ISO = fermo 3 secondi con i gomiti a 90°. Il set registra il totale delle ripetizioni (30).'},
-  {title:'Pull up + ISO', sub:'5 set · presa prona', ex:'pull_up', chain:['3 pull up','ISO','3 pull up','ISO','3 pull up','ISO'], sets:5, mode:'reps', value:9, rest:60,
-   hint:'ISO con gomiti a 90° e testa sotto la sbarra, 3 secondi.'},
-  {title:'Dip + ISO', sub:'5 set · parallele', ex:'dip', chain:['10 dip','ISO','10 dip','ISO','10 dip','ISO'], sets:5, mode:'reps', value:30, rest:60,
-   hint:'ISO con gomiti a 90°, 3 secondi.'},
-  {title:'Neutral pull up + ISO', sub:'5 set · presa neutra', ex:'neutral_pull', chain:['5 neutral','ISO','5 neutral','ISO','5 neutral','ISO'], sets:5, mode:'reps', value:15, rest:60,
+  {title:'Push up + ISO', ex:'push_up', parts:P(10,'push up',3), iso:3, sets:5, mode:'reps', rest:60,
+   hint:'ISO = fermo con i gomiti a 90°. Ogni set registra il totale delle ripetizioni del circuito.'},
+  {title:'Pull up + ISO', sub:'presa prona', ex:'pull_up', parts:P(3,'pull up',3), iso:3, sets:5, mode:'reps', rest:60,
+   hint:'ISO con gomiti a 90° e testa sotto la sbarra.'},
+  {title:'Dip + ISO', sub:'parallele', ex:'dip', parts:P(10,'dip',3), iso:3, sets:5, mode:'reps', rest:60,
+   hint:'ISO con gomiti a 90°.'},
+  {title:'Neutral pull up + ISO', sub:'presa neutra', ex:'neutral_pull', parts:P(5,'neutral',3), iso:3, sets:5, mode:'reps', rest:60,
    hint:'Poi 2 min di recupero prima di spalle e addome.'},
   {note:{title:'Spalle e addome', text:'Nel messaggio originale c’erano solo i titoli. Scegli 2 esercizi, 3 set ciascuno:'}, suggest:['pike_pu','hollow','leg_raise','plank']}
 ];
@@ -592,10 +610,10 @@ var RULES = {
 
 /* ================= STATO ================= */
 var STORE_KEY = 'parchetto-app-v1';
-var store = { history:[], custom:[], log:{}, vsel:{}, settings:{autoCal:true} };
+var store = { history:[], custom:[], log:{}, vsel:{}, settings:{autoCal:true}, plan:{}, targets:{} };
 try { var raw = localStorage.getItem(STORE_KEY); if(raw){ var p = JSON.parse(raw); if(p && typeof p === 'object') store = Object.assign(store, p); } } catch(e){}
 ['history','custom'].forEach(function(k){ if(!Array.isArray(store[k])) store[k] = []; });
-['log','vsel','settings'].forEach(function(k){ if(!store[k] || typeof store[k] !== 'object') store[k] = {}; });
+['log','vsel','settings','plan','targets'].forEach(function(k){ if(!store[k] || typeof store[k] !== 'object') store[k] = {}; });
 if(store.settings.autoCal == null) store.settings.autoCal = true;
 delete store.sets;
 function save(){ try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch(e){} }
@@ -646,9 +664,23 @@ function variantIndex(wid, idx, it){
   if(store.vsel[k] != null) return store.vsel[k];
   return isoWeek(new Date()) % it.variants.length;
 }
-function resolve(it, wid, idx){ // returns concrete item (+ log key)
-  if(it.variants){ var v = variantIndex(wid, idx, it); var c = it.variants[v]; return {it:c, key:wid + '|' + idx + '|v' + v, v:v}; }
-  return {it:it, key:wid + '|' + idx};
+function planKey(wid, idx, v){ return (wid === 'day1' || wid === 'day2' ? 'std' : wid) + '|' + idx + (v != null ? '|v' + v : ''); }
+function applyPlan(base, ov){
+  var c = Object.assign({}, base);
+  ov = ov || {};
+  if(base.parts) c.parts = base.parts.map(function(p, i){ return {label:p.label, n: ov.parts && ov.parts[i] != null ? ov.parts[i] : p.n}; });
+  if(base.iso != null) c.iso = ov.iso != null ? ov.iso : base.iso;
+  ['sets','rest','value'].forEach(function(k){ if(ov[k] != null) c[k] = ov[k]; });
+  if(c.parts) c.value = c.parts.reduce(function(a, p){ return a + p.n; }, 0);
+  return c;
+}
+function resolve(raw, wid, idx){ // item concreto con le modifiche + chiavi
+  var w = getWorkout(wid), v = null, base = raw;
+  if(raw.variants){ v = variantIndex(wid, idx, raw); base = raw.variants[v]; }
+  var key = wid + '|' + idx + (v != null ? '|v' + v : '');
+  var pkey = planKey(wid, idx, v);
+  var it = w && w.custom ? applyPlan(base, null) : applyPlan(base, store.plan[pkey]);
+  return {it:it, key:key, v:v, pkey:pkey, base:base};
 }
 function entry(key, it, create){
   var d = todayISO();
@@ -663,7 +695,9 @@ function workoutDone(w){
     if(raw.suggest) return true;
     var r = resolve(raw, w.id, idx), e = entry(r.key, r.it, false);
     if(!e) return false;
-    return e.v.every(function(x){ return x != null; });
+    var n = r.it.sets || 1;
+    for(var i = 0; i < n; i++) if(e.v[i] == null) return false;
+    return true;
   });
 }
 function afterLog(){
@@ -733,6 +767,98 @@ function chainEl(parts){
   return el;
 }
 
+function editChain(it, onEdit){
+  var el = document.createElement('div'); el.className = 'chain';
+  function chipBtn(text, iso){
+    var c = document.createElement('button'); c.type = 'button'; c.className = 'chip edit' + (iso ? ' iso' : '');
+    c.textContent = text; c.setAttribute('aria-label', 'Modifica ' + text); c.addEventListener('click', onEdit); return c;
+  }
+  function arrow(){ var a = document.createElement('span'); a.className = 'arrow'; a.textContent = '›'; a.setAttribute('aria-hidden','true'); return a; }
+  if(it.parts){
+    it.parts.forEach(function(p, i){
+      if(i) el.appendChild(arrow());
+      el.appendChild(chipBtn(p.n + ' ' + p.label));
+      if(it.iso != null){ el.appendChild(arrow()); el.appendChild(chipBtn('ISO ' + it.iso + '″', true)); }
+    });
+  } else el.appendChild(chipBtn(chainLabel(it)));
+  return el;
+}
+
+/* ---------- modifica obiettivo (reps, ISO, set, recupero) ---------- */
+function openPlanSheet(raw, w, idx){
+  var r = resolve(raw, w.id, idx), it = JSON.parse(JSON.stringify(r.it)), e = LIBMAP[it.ex];
+  var m = MODES[it.mode], oldValue = r.it.value;
+  var title = raw.title || it.title || (e ? e.name : '');
+  function stepRow(label, get, set, step, min, max, unit){
+    var row = document.createElement('div'); row.className = 'prow';
+    row.innerHTML = '<span class="pl"></span><div class="stepper"><button type="button" aria-label="Meno">−</button><output></output><button type="button" aria-label="Più">+</button></div>';
+    row.querySelector('.pl').textContent = label;
+    var out = row.querySelector('output');
+    function paint(){ out.textContent = get() + (unit || ''); }
+    var bs = row.querySelectorAll('button');
+    bs[0].addEventListener('click', function(){ set(Math.max(min, get() - step)); paint(); total(); });
+    bs[1].addEventListener('click', function(){ set(Math.min(max, get() + step)); paint(); total(); });
+    paint(); return row;
+  }
+  sheetPanel.innerHTML = '<div class="sheet-top"><h2 id="sheet-title"></h2><button class="xbtn" type="button" data-close aria-label="Chiudi">✕</button></div>'
+    + '<p class="muscles">Il nuovo valore diventa l’obiettivo di questo esercizio' + (w.id === 'day1' || w.id === 'day2' ? ' in Giorno 1 e Giorno 2' : '') + ' e i prossimi set vengono registrati così nei progressi.</p>'
+    + '<div id="prows"></div><div class="ptotal" id="ptotal"></div>'
+    + '<div class="actionrow" style="margin-top:14px"><button class="primary" type="button" data-save>Salva</button></div>'
+    + '<div id="preset" style="margin-top:10px"></div>';
+  sheetPanel.querySelector('#sheet-title').textContent = 'Modifica: ' + title;
+  var rows = sheetPanel.querySelector('#prows');
+  if(it.parts){
+    var same = it.parts.every(function(p){ return p.label === it.parts[0].label; });
+    if(same && it.parts.length > 1){
+      var allRow = stepRow('Tutti i blocchi', function(){ return it.parts[0].n; }, function(v){ var d = v - it.parts[0].n; it.parts.forEach(function(p){ p.n = Math.max(1, p.n + d); }); rows.querySelectorAll('.prow.blk output').forEach(function(o, i){ o.textContent = it.parts[i].n; }); }, 1, 1, 100);
+      allRow.classList.add('all'); rows.appendChild(allRow);
+    }
+    it.parts.forEach(function(p, i){
+      var rw = stepRow(same ? 'Blocco ' + (i+1) + ' · ' + p.label : p.label, function(){ return p.n; }, function(v){ p.n = v; }, 1, 1, 100);
+      rw.classList.add('blk'); rows.appendChild(rw);
+    });
+    if(it.iso != null) rows.appendChild(stepRow('ISO (secondi)', function(){ return it.iso; }, function(v){ it.iso = v; }, 1, 1, 60, '″'));
+  } else {
+    rows.appendChild(stepRow(m.long.charAt(0).toUpperCase() + m.long.slice(1) + ' per set', function(){ return it.value; }, function(v){ it.value = v; }, it.mode === 'dist' && it.value >= 200 ? 50 : m.step, 1, m.max));
+  }
+  rows.appendChild(stepRow('Set', function(){ return it.sets; }, function(v){ it.sets = v; }, 1, 1, 10));
+  var restRow = document.createElement('div'); restRow.className = 'prow';
+  restRow.innerHTML = '<span class="pl">Recupero</span><select aria-label="Recupero">' + [30,45,60,90,120,150,180].map(function(x){ return '<option value="' + x + '"' + (x === it.rest ? ' selected' : '') + '>' + restText(x) + '</option>'; }).join('') + '</select>';
+  restRow.querySelector('select').addEventListener('change', function(ev){ it.rest = parseInt(ev.target.value, 10); });
+  rows.appendChild(restRow);
+  function total(){
+    var v = it.parts ? it.parts.reduce(function(a, p){ return a + p.n; }, 0) : it.value;
+    sheetPanel.querySelector('#ptotal').innerHTML = 'Ogni set: <b>' + valText(it.mode, v) + '</b>' + (v !== oldValue ? ' <span class="pchg">prima ' + valText(it.mode, oldValue) + '</span>' : '');
+  }
+  total();
+  if(!w.custom && store.plan[r.pkey]){
+    var rb = document.createElement('button'); rb.type = 'button'; rb.className = 'linkbtn'; rb.textContent = 'Torna ai valori originali';
+    rb.addEventListener('click', function(){ delete store.plan[r.pkey]; save(); closeSheet(); renderWorkout(w.id, true); toast('Valori originali ripristinati'); });
+    sheetPanel.querySelector('#preset').appendChild(rb);
+  }
+  sheetPanel.querySelector('[data-save]').addEventListener('click', function(){
+    var newValue = it.parts ? it.parts.reduce(function(a, p){ return a + p.n; }, 0) : it.value;
+    if(w.custom){
+      var c = store.custom.find(function(x){ return x.id === w.id; });
+      if(c && c.items[idx]){ c.items[idx].value = it.value; c.items[idx].sets = it.sets; c.items[idx].rest = it.rest; }
+    } else {
+      var ov = {sets:it.sets, rest:it.rest};
+      if(it.parts){ ov.parts = it.parts.map(function(p){ return p.n; }); if(it.iso != null) ov.iso = it.iso; } else ov.value = it.value;
+      store.plan[r.pkey] = ov;
+    }
+    // accorcia il registro di oggi se hai tolto dei set
+    var le = entry(r.key, r.it, false); if(le && le.v.length > it.sets) le.v = le.v.slice(0, it.sets);
+    if(it.ex && !it.nolog && newValue !== oldValue){
+      var rec = {date:todayISO(), from:oldValue, to:newValue, mode:it.mode};
+      if(it.parts){ rec.dFrom = r.it.parts.map(function(p){ return p.n; }).join('+'); rec.dTo = it.parts.map(function(p){ return p.n; }).join('+'); }
+      (store.targets[it.ex] = store.targets[it.ex] || []).push(rec);
+    }
+    save(); closeSheet(); renderWorkout(w.id, true);
+    toast(newValue !== oldValue ? 'Nuovo obiettivo: ' + valText(it.mode, newValue) + ' per set. Lo trovi nei progressi' : 'Modifiche salvate');
+  });
+  openSheetShell();
+}
+
 function figBlock(ids, capText){
   var figs = document.createElement('div'); figs.className = 'figs one';
   var fb = document.createElement('button'); fb.type = 'button'; fb.className = 'figbtn';
@@ -765,7 +891,9 @@ function itemCard(raw, idx, num, w){
   var r = resolve(raw, w.id, idx), it = r.it, e = LIBMAP[it.ex];
   if(!e) return card;
   var title = raw.title || it.title || e.name;
-  var sub = raw.variants ? e.name + ' · ' + rxText(it) : (it.sub || rxText(it) + ' · ' + e.cat);
+  var sub = raw.variants ? e.name + ' · ' + rxText(it)
+    : it.parts ? it.sets + ' set · ' + it.value + ' ' + MODES[it.mode].long + ' per set' + (it.sub ? ' · ' + it.sub : '')
+    : rxText(it) + ' · ' + e.cat;
   card.innerHTML = '<div class="card-head"><div class="num">' + num + '</div><div><h2>' + esc(title) + '</h2><p>' + esc(sub) + '</p></div></div>';
   if(raw.variants){
     var vt = document.createElement('div'); vt.className = 'vtabs'; vt.style.padding = '10px 14px 0'; vt.style.margin = '0';
@@ -780,7 +908,8 @@ function itemCard(raw, idx, num, w){
   card.appendChild(figBlock(it.figs || [it.ex], e.cues[0]));
   var plan = document.createElement('div'); plan.className = 'plan';
   plan.insertAdjacentHTML('beforeend', '<h3>Ogni set</h3>');
-  plan.appendChild(chainEl(it.chain || [chainLabel(it)]));
+  plan.appendChild(editChain(it, function(){ openPlanSheet(raw, w, idx); }));
+  plan.insertAdjacentHTML('beforeend', '<p class="edithint">✎ Tocca i numeri per cambiarli: il nuovo valore resta e finisce nei progressi.</p>');
   var sets = document.createElement('div'); sets.className = 'sets';
   setButtons(sets, r.key, it, null);
   plan.appendChild(sets);
@@ -1247,6 +1376,7 @@ function renderProgress(){
   // Per esercizio
   var logged = {};
   Object.keys(store.log).forEach(function(d){ Object.keys(store.log[d]).forEach(function(k){ var e = store.log[d][k]; if(e && e.ex && LIBMAP[e.ex] && e.v.some(function(x){ return x != null; })){ if(!logged[e.ex] || logged[e.ex] < d) logged[e.ex] = d; } }); });
+  Object.keys(store.targets).forEach(function(k){ if(LIBMAP[k] && !logged[k] && store.targets[k].length) logged[k] = store.targets[k][store.targets[k].length-1].date; });
   var ids = Object.keys(logged).sort(function(a,b){ return logged[b] < logged[a] ? -1 : 1; });
   var pc = document.createElement('div'); pc.className = 'pcard'; pc.id = 'prog-ex';
   pc.innerHTML = '<h3>Progressi per esercizio</h3><p class="sub">Miglior set per sessione (per corsa: totale della sessione)</p>';
@@ -1260,6 +1390,13 @@ function renderProgress(){
   var vals = hist.map(function(h){ return vol ? h.total : h.best; });
   pc.insertAdjacentHTML('beforeend', svgExercise(hist));
   pc.insertAdjacentHTML('beforeend', '<div class="pstats"><div><b>' + valText(mode, vals[0]) + '</b><span>prima</span></div><div><b>' + valText(mode, vals[vals.length-1]) + '</b><span>ultima</span></div><div><b>' + valText(mode, Math.max.apply(null, vals)) + '</b><span>record</span></div><div><b>' + hist.length + '</b><span>sessioni</span></div></div>');
+  var tg = (store.targets[progEx] || []).slice(-6).reverse();
+  if(tg.length){
+    pc.insertAdjacentHTML('beforeend', '<div class="tglist"><b>Cambi di obiettivo</b>' + tg.map(function(t){
+      var up = t.to > t.from;
+      return '<div class="tg"><span>' + fmtDate(t.date) + '</span><span>' + valText(t.mode, t.from) + ' → <b>' + valText(t.mode, t.to) + '</b>' + (t.dFrom ? '<small class="tgd">blocchi ' + t.dFrom + ' → ' + t.dTo + '</small>' : '') + '</span><span class="' + (up ? 'up' : 'down') + '">' + (up ? '▲ +' : '▼ ') + (t.to - t.from) + '</span></div>';
+    }).join('') + '</div>');
+  }
   var an = analyse(e, hist);
   var ad = document.createElement('div'); ad.className = 'advice adv-' + an.cls; ad.innerHTML = an.html;
   if(an.next){ var b = document.createElement('button'); b.type = 'button'; b.className = 'linkbtn'; b.style.display = 'block'; b.textContent = 'Vedi ' + LIBMAP[an.next].name; b.addEventListener('click', function(){ openSheet(an.next); }); ad.appendChild(b); }
@@ -1337,12 +1474,14 @@ function renderSettings(){
     store.custom = Array.isArray(data.custom) ? data.custom : [];
     store.log = data.log && typeof data.log === 'object' ? data.log : {};
     store.vsel = data.vsel && typeof data.vsel === 'object' ? data.vsel : {};
+    store.plan = data.plan && typeof data.plan === 'object' ? data.plan : {};
+    store.targets = data.targets && typeof data.targets === 'object' ? data.targets : {};
     save(); document.getElementById('bk-text').value = ''; document.getElementById('bk-restore').hidden = true;
     renderCalendar(); renderTabs(); toast('Dati ripristinati: ' + store.history.length + ' allenamenti');
   });
   paintSettings();
 }
-function backupText(){ return 'PARCHETTO-BACKUP ' + JSON.stringify({history:store.history, custom:store.custom, log:store.log, vsel:store.vsel}); }
+function backupText(){ return 'PARCHETTO-BACKUP ' + JSON.stringify({history:store.history, custom:store.custom, log:store.log, vsel:store.vsel, plan:store.plan, targets:store.targets}); }
 function markBackup(){ store.settings.lastBackup = Date.now(); store.settings.lastPrompt = Date.now(); save(); hideBackupBanner(); }
 function doBackup(){
   var txt = backupText();
