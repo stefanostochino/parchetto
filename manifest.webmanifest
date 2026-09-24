@@ -1,7 +1,7 @@
 {
   "name": "SCHEDONE",
   "short_name": "SCHEDONE",
-  "description": "Le tue schede di allenamento: calisthenics, sala pesi, corsa. Registra set e carichi e guarda i tuoi progressi.",
+  "description": "Le tue schede di allenamento: calisthenics, sala pesi, corsa. Registra set e carichi, usa il timer a intervalli e guarda i tuoi progressi.",
   "lang": "it",
   "start_url": "./",
   "scope": "./",
