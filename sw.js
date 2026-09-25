@@ -1,6 +1,6 @@
 // SCHEDONE: prima di tutto offline.
 // L'app si apre sempre dalla copia salvata sul telefono; gli aggiornamenti arrivano in sottofondo.
-const CACHE = "schedone-v9";
+const CACHE = "schedone-v10";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png",
   "./icons/icon-maskable-512.png", "./icons/apple-touch-icon.png", "./fonts/Barlow-Medium.ttf", "./fonts/Barlow-Regular.ttf",
   "./fonts/Barlow-SemiBold.ttf", "./fonts/BarlowCondensed-Bold.ttf", "./fonts/BarlowCondensed-ExtraBold.ttf"];
