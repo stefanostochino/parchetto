@@ -1761,8 +1761,12 @@ function openWorkoutMenu(w){
     openSheetShell();
   }
   function menu(){
-    shell(w.name, '<div class="wmenu"><button class="ghostbtn" type="button" data-rn>Rinomina</button><button class="dangerbtn" type="button" data-dl>Elimina</button></div>');
+    shell(w.name, '<div class="wmenu"><button class="ghostbtn" type="button" data-rn>Rinomina</button><button class="ghostbtn" type="button" data-ed>Modifica</button><button class="dangerbtn" type="button" data-dl>Elimina</button></div>');
     sheetPanel.querySelector('[data-rn]').addEventListener('click', rename);
+    sheetPanel.querySelector('[data-ed]').addEventListener('click', function(){
+      var c = store.custom.find(function(x){ return x.id === w.id; }); if(!c) return;
+      closeSheet(); editWorkout(c); showView('builder');
+    });
     sheetPanel.querySelector('[data-dl]').addEventListener('click', confirmDel);
   }
   function rename(){
@@ -2132,6 +2136,7 @@ function addToWorkout(target, exId){
 
 /* ================= CREA ================= */
 var draft = null;
+function editWorkout(c){ draft = JSON.parse(JSON.stringify(c)); renderBuilder(); }
 function renderBuilder(){
   var root = document.getElementById('builder-root'); root.innerHTML = '';
   if(!draft){
@@ -2153,7 +2158,7 @@ function renderBuilder(){
         + '<div class="acts"><button class="primary" type="button" data-a="open">Apri</button><button class="ghostbtn" type="button" data-a="edit">Modifica</button><button class="dangerbtn" type="button" data-a="del">Elimina</button></div>';
       card.querySelector('h3').textContent = c.name;
       card.querySelector('[data-a="open"]').addEventListener('click', function(){ renderWorkout(c.id); showView('workout'); });
-      card.querySelector('[data-a="edit"]').addEventListener('click', function(){ draft = JSON.parse(JSON.stringify(c)); renderBuilder(); });
+      card.querySelector('[data-a="edit"]').addEventListener('click', function(){ editWorkout(c); });
       card.querySelector('[data-a="del"]').addEventListener('click', function(ev){
         var b = ev.currentTarget;
         if(b.getAttribute('data-confirm') !== '1'){ b.setAttribute('data-confirm','1'); b.textContent = 'Tocca di nuovo per eliminare'; return; }
@@ -2279,6 +2284,7 @@ function renderBuilder(){
     var name = (draft.name || '').trim() || ('Allenamento ' + (store.custom.length + 1));
     var rec = { id: draft.id || ('c' + Date.now().toString(36)), name:name, color:draft.color, items:draft.items, rules:draft.rules, intro:draft.intro };
     var i = store.custom.findIndex(function(x){ return x.id === rec.id; });
+    if(i > -1) rec = Object.assign({}, store.custom[i], rec);   // campi non gestiti dall'editor restano intatti
     if(i > -1) store.custom[i] = rec; else store.custom.push(rec);
     save(); draft = null; renderWorkout(rec.id); showView('workout'); toast('“' + name + '” salvato');
   });
