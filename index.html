@@ -275,7 +275,12 @@ main{max-width:640px;margin:0 auto;padding:var(--s4) var(--s4) calc(var(--nav-h)
 .mycard .thumbs{display:flex;gap:var(--s1);overflow:hidden}
 .mycard .thumbs .fxbox{width:62px;flex:none;background:var(--fig-bg);border-radius:var(--r)}
 .mycard .acts{display:flex;gap:var(--s2);flex-wrap:wrap}
-.wrow{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:56px;appearance:none;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);color:var(--ink);padding:var(--s3) var(--s4);margin:0 0 var(--s2);cursor:pointer}
+.wrow{display:flex;align-items:center;width:100%;min-height:56px;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);color:var(--ink);margin:0 0 var(--s2)}
+.wrow .wr-main{flex:1;min-width:0;display:flex;align-items:center;gap:var(--s3);appearance:none;text-align:left;background:none;border:0;color:inherit;padding:var(--s3) var(--s2) var(--s3) var(--s4);cursor:pointer;min-height:56px}
+.wrow .wr-more{flex:none;appearance:none;background:none;border:0;color:var(--muted);width:var(--tap);height:var(--tap);font-size:22px;line-height:1;cursor:pointer;margin-right:var(--s1)}
+.wmenu{display:flex;flex-direction:column;gap:var(--s2);padding:var(--s2) 0}
+.wmenu .ghostbtn,.wmenu .primary{width:100%}
+.dangerfill{appearance:none;width:100%;min-height:var(--btn-h,48px);border:0;border-radius:var(--r);background:var(--alert);color:#fff;font-weight:700;font-size:var(--fs-sm);cursor:pointer}
 .wrow .sw{width:12px;height:12px;border-radius:50%;flex:none}
 .wrow .wr-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .wrow b{font-family:var(--display);font-weight:800;font-size:var(--fs-d2);line-height:1.05;text-transform:uppercase;letter-spacing:.02em;word-break:break-word}
@@ -1726,12 +1731,14 @@ function renderWorkoutList(){
   document.getElementById('workout-empty').hidden = all.length > 0;
   box.hidden = !all.length; box.innerHTML = '';
   all.forEach(function(w){
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'wrow';
-    b.innerHTML = '<span class="sw"></span><span class="wr-t"><b></b><small></small></span><span class="wr-go">Apri ›</span>';
+    var b = document.createElement('div'); b.className = 'wrow';
+    b.innerHTML = '<button class="wr-main" type="button"><span class="sw"></span><span class="wr-t"><b></b><small></small></span><span class="wr-go">Apri ›</span></button><button class="wr-more" type="button" aria-label="Altre azioni"></button>';
+    b.querySelector('.wr-more').textContent = '⋮';
     b.querySelector('.sw').style.background = w.color;
     b.querySelector('b').textContent = w.name;
     b.querySelector('small').textContent = w.items.length + ' esercizi · circa ' + estimateMin(w.items) + ' min';
-    b.addEventListener('click', function(){ renderWorkout(w.id); showView('workout'); });
+    b.querySelector('.wr-main').addEventListener('click', function(){ renderWorkout(w.id); showView('workout'); });
+    b.querySelector('.wr-more').addEventListener('click', function(){ openWorkoutMenu(w); });
     box.appendChild(b);
   });
   document.getElementById('appbar-sub').textContent = all.length + (all.length === 1 ? ' allenamento' : ' allenamenti');
@@ -1742,6 +1749,38 @@ function renameWorkout(id, name){
   if(!name || !c) return false;
   if(c.name !== name){ c.name = name; save(); }
   return true;
+}
+function deleteWorkout(id){
+  store.custom = store.custom.filter(function(x){ return x.id !== id; });
+  save(); if(currentId === id) currentId = null;
+}
+function openWorkoutMenu(w){
+  function shell(title, body){
+    sheetPanel.innerHTML = '<div class="setsheet"><div class="sheet-top"><h2 id="sheet-title"></h2><button class="xbtn" type="button" data-close aria-label="Chiudi">✕</button></div>' + body + '</div>';
+    sheetPanel.querySelector('#sheet-title').textContent = title;
+    openSheetShell();
+  }
+  function menu(){
+    shell(w.name, '<div class="wmenu"><button class="ghostbtn" type="button" data-rn>Rinomina</button><button class="dangerbtn" type="button" data-dl>Elimina</button></div>');
+    sheetPanel.querySelector('[data-rn]').addEventListener('click', rename);
+    sheetPanel.querySelector('[data-dl]').addEventListener('click', confirmDel);
+  }
+  function rename(){
+    shell('Rinomina allenamento', '<label class="field"><span>Nome</span><input type="text" maxlength="40"></label><div class="actionrow"><button class="primary" type="button" data-ok>Salva</button></div>');
+    var inp = sheetPanel.querySelector('input'); inp.value = w.name; inp.focus(); inp.select();
+    function ok(){ if(!renameWorkout(w.id, inp.value)){ toast('Il nome non può essere vuoto'); return; } closeSheet(); renderWorkoutList(); toast('Allenamento rinominato'); }
+    sheetPanel.querySelector('[data-ok]').addEventListener('click', ok);
+    inp.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') ok(); });
+  }
+  function confirmDel(){
+    shell('Eliminare l’allenamento?', '<p class="muscles"></p><div class="wmenu"><button class="dangerfill" type="button" data-ok>Elimina</button><button class="ghostbtn" type="button" data-no>Annulla</button></div>');
+    sheetPanel.querySelector('.muscles').textContent = '“' + w.name + '” verrà eliminato. Storico e progressi restano.';
+    sheetPanel.querySelector('[data-no]').addEventListener('click', closeSheet);
+    sheetPanel.querySelector('[data-ok]').addEventListener('click', function(){
+      deleteWorkout(w.id); closeSheet(); renderWorkoutList(); renderTabs(); toast('Allenamento eliminato. Storico e progressi restano.');
+    });
+  }
+  menu();
 }
 function paintDetailBar(w, editing){
   var bar = document.getElementById('wdetail'); bar.innerHTML = '';
@@ -2118,8 +2157,7 @@ function renderBuilder(){
       card.querySelector('[data-a="del"]').addEventListener('click', function(ev){
         var b = ev.currentTarget;
         if(b.getAttribute('data-confirm') !== '1'){ b.setAttribute('data-confirm','1'); b.textContent = 'Tocca di nuovo per eliminare'; return; }
-        store.custom = store.custom.filter(function(x){ return x.id !== c.id; });
-        save(); if(currentId === c.id) currentId = null;
+        deleteWorkout(c.id);
         renderBuilder(); renderTabs(); toast('Allenamento eliminato. Storico e progressi restano.');
       });
       list.appendChild(card);
