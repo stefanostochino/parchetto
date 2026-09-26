@@ -275,6 +275,16 @@ main{max-width:640px;margin:0 auto;padding:var(--s4) var(--s4) calc(var(--nav-h)
 .mycard .thumbs{display:flex;gap:var(--s1);overflow:hidden}
 .mycard .thumbs .fxbox{width:62px;flex:none;background:var(--fig-bg);border-radius:var(--r)}
 .mycard .acts{display:flex;gap:var(--s2);flex-wrap:wrap}
+.wrow{display:flex;align-items:center;gap:var(--s3);width:100%;min-height:56px;appearance:none;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);color:var(--ink);padding:var(--s3) var(--s4);margin:0 0 var(--s2);cursor:pointer}
+.wrow .sw{width:12px;height:12px;border-radius:50%;flex:none}
+.wrow .wr-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.wrow b{font-family:var(--display);font-weight:800;font-size:var(--fs-d2);line-height:1.05;text-transform:uppercase;letter-spacing:.02em;word-break:break-word}
+.wrow small{font-size:var(--fs-sm);color:var(--muted)}
+.wrow .wr-go{flex:none;color:var(--accent);font-weight:700;font-size:var(--fs-sm)}
+.wdetail{display:flex;align-items:center;gap:var(--s2);margin:0 0 var(--s2)}
+.wdetail .wd-name{flex:1;min-width:0;font-family:var(--display);font-weight:800;font-size:var(--fs-d2);text-transform:uppercase;letter-spacing:.02em;line-height:1.05;word-break:break-word}
+.wdetail input{flex:1;min-width:0;min-height:var(--tap);font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--accent);border-radius:var(--r);padding:0 var(--s3)}
+.wdetail button{flex:none;min-height:var(--tap)}
 .emptybox{border:1.5px dashed var(--line);border-radius:var(--r);padding:var(--s5);color:var(--muted);font-size:var(--fs-sm);margin:var(--s3) 0 var(--s4)}
 .field{display:block;margin:0 0 var(--s3)}
 .field span{display:block;font-weight:600;font-size:var(--fs-sm);margin-bottom:var(--s1)}
@@ -957,12 +967,14 @@ h2.sect{margin-bottom:var(--s3)}
   </section>
 
   <section class="view" id="view-workout" aria-label="Allenamento">
+    <div id="workout-list" hidden></div>
     <div id="workout-empty" class="wempty" hidden>
       <h2>Nessun allenamento</h2>
       <p>Crea il tuo primo allenamento, importa la scheda del tuo coach da una foto oppure parti da una scheda pronta.</p>
       <div class="actionrow"><button class="primary" type="button" id="empty-create">Crea o scegli una scheda</button><button class="ghostbtn" type="button" id="empty-import">📷 Importa scheda</button></div>
     </div>
     <div id="workout-full">
+    <div class="wdetail" id="wdetail"></div>
     <div class="wstats" id="workout-stats"></div>
     <ul class="rules" id="workout-rules"></ul>
     <details class="winfo"><summary>Informazioni sull’allenamento</summary><p class="intro" id="workout-intro"></p></details>
@@ -1338,7 +1350,7 @@ function estimateMin(items){
   return Math.max(1, Math.round(s / 60));
 }
 
-var currentId = null, toastT = null;
+var currentId = null, toastT = null, wlist = false; // wlist: la vista Allenamento mostra l'elenco invece del dettaglio
 function toast(msg){ var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function(){ t.classList.remove('show'); }, 2600); }
 
 /* ---------- registro set ---------- */
@@ -1685,7 +1697,9 @@ function renderWorkout(id, keepScroll){
   document.getElementById('workout-full').hidden = !w;
   emptyBox.hidden = !!w;
   if(!w){ currentId = null; document.getElementById('daytabs').innerHTML = ''; document.getElementById('appbar-sub').textContent = 'Nessun allenamento'; paintWorkoutProgress(true); return; }
+  wlist = false; document.getElementById('workout-list').hidden = true;
   currentId = w.id; store.settings.lastWorkout = w.id; save();
+  paintDetailBar(w);
   document.getElementById('appbar-sub').textContent = w.name;
   document.getElementById('workout-intro').textContent = w.intro;
   var rules = document.getElementById('workout-rules'); rules.innerHTML = '';
@@ -1698,6 +1712,46 @@ function renderWorkout(id, keepScroll){
   if(!w.items.length) body.insertAdjacentHTML('beforeend', '<div class="emptybox">Questo allenamento non ha ancora esercizi. Aggiungili dalla sezione Crea.</div>');
   renderTabs(); updateCompleteStatus(); paintWorkoutStats(); paintWorkoutProgress(true);
   if(keepScroll) window.scrollTo(0, y);
+}
+
+/* ---------- elenco allenamenti, indietro, rinomina (solo l'interfaccia: gli oggetti workout restano invariati) ---------- */
+function renderWorkoutList(){
+  var box = document.getElementById('workout-list'), all = allWorkouts();
+  wlist = true; currentId = null;
+  document.getElementById('workout-full').hidden = true;
+  document.getElementById('workout-empty').hidden = all.length > 0;
+  box.hidden = !all.length; box.innerHTML = '';
+  all.forEach(function(w){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'wrow';
+    b.innerHTML = '<span class="sw"></span><span class="wr-t"><b></b><small></small></span><span class="wr-go">Apri ›</span>';
+    b.querySelector('.sw').style.background = w.color;
+    b.querySelector('b').textContent = w.name;
+    b.querySelector('small').textContent = w.items.length + ' esercizi · circa ' + estimateMin(w.items) + ' min';
+    b.addEventListener('click', function(){ renderWorkout(w.id); showView('workout'); });
+    box.appendChild(b);
+  });
+  document.getElementById('appbar-sub').textContent = all.length + (all.length === 1 ? ' allenamento' : ' allenamenti');
+}
+function renameWorkout(id, name){
+  name = (name || '').trim().slice(0, 40);
+  var c = store.custom.find(function(x){ return x.id === id; });
+  if(!name || !c) return false;
+  if(c.name !== name){ c.name = name; save(); }
+  return true;
+}
+function paintDetailBar(w, editing){
+  var bar = document.getElementById('wdetail'); bar.innerHTML = '';
+  function mk(cls, txt, fn){ var b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = txt; b.addEventListener('click', fn); bar.appendChild(b); return b; }
+  if(!editing){
+    mk('linkbtn', '‹ Elenco', function(){ wlist = true; showView('workout'); });
+    var n = document.createElement('div'); n.className = 'wd-name'; n.textContent = w.name; bar.appendChild(n);
+    mk('ghostbtn', 'Rinomina', function(){ paintDetailBar(w, true); bar.querySelector('input').focus(); });
+    return;
+  }
+  var inp = document.createElement('input'); inp.type = 'text'; inp.maxLength = 40; inp.value = w.name; inp.setAttribute('aria-label', 'Nome allenamento'); bar.appendChild(inp);
+  function done(){ if(!renameWorkout(w.id, inp.value)){ toast('Il nome non può essere vuoto'); return; } renderWorkout(w.id, true); toast('Allenamento rinominato'); }
+  inp.addEventListener('keydown', function(ev){ if(ev.key === 'Enter') done(); else if(ev.key === 'Escape') paintDetailBar(w); });
+  mk('primary', 'Salva', done); mk('ghostbtn', 'Annulla', function(){ paintDetailBar(w); });
 }
 
 function updateCompleteStatus(){
@@ -3085,18 +3139,18 @@ document.getElementById('cal-next').addEventListener('click', function(){ calDat
 /* ================= NAVIGAZIONE ================= */
 function showView(name){
   if(name !== 'library' && pick) endPick();
-  if(name === 'workout' && !currentId){ var aw = allWorkouts(); if(aw.length) renderWorkout(store.settings.lastWorkout && getWorkout(store.settings.lastWorkout) ? store.settings.lastWorkout : aw[0].id); else renderWorkout(null); }
+  if(name === 'workout' && !currentId && !wlist){ var aw = allWorkouts(); if(aw.length) renderWorkout(store.settings.lastWorkout && getWorkout(store.settings.lastWorkout) ? store.settings.lastWorkout : aw[0].id); else renderWorkout(null); }
   ['home','workout','library','builder','progress','calendar','timer','settings'].forEach(function(v){ document.getElementById('view-' + v).classList.toggle('active', v === name); });
   document.body.classList.toggle('on-home', name === 'home');
-  document.body.classList.toggle('on-workout', name === 'workout');
+  document.body.classList.toggle('on-workout', name === 'workout' && !wlist);
   document.querySelectorAll('.navbtn').forEach(function(b){ b.setAttribute('aria-selected', b.getAttribute('data-view') === name ? 'true' : 'false'); });
-  document.getElementById('daytabs').style.display = name === 'workout' && currentId ? 'flex' : 'none';
-  document.getElementById('timer').style.display = name === 'workout' && currentId ? 'flex' : 'none';
+  document.getElementById('daytabs').style.display = name === 'workout' && currentId && !wlist ? 'flex' : 'none';
+  document.getElementById('timer').style.display = name === 'workout' && currentId && !wlist ? 'flex' : 'none';
   var titles = {home:'SCHEDONE', workout:'Allenamento', library:'Esercizi', builder:'Crea allenamento', progress:'Statistiche', calendar:'Calendario', timer:'Timer', settings:'Impostazioni'};
   document.getElementById('appbar-title').textContent = titles[name];
   var sub = document.getElementById('appbar-sub');
   if(name === 'home') renderHome();
-  if(name === 'workout'){ var w = getWorkout(currentId); sub.textContent = w ? w.name : 'Nessun allenamento'; }
+  if(name === 'workout'){ if(wlist) renderWorkoutList(); else { var w = getWorkout(currentId); sub.textContent = w ? w.name : 'Nessun allenamento'; } }
   if(name === 'library'){ sub.textContent = LIB.length + ' esercizi con muscoli e progressioni'; renderLib(); }
   if(name === 'builder'){ sub.textContent = 'I tuoi allenamenti personalizzati'; renderBuilder(); }
   if(name === 'progress'){ sub.textContent = 'Costanza, equilibrio muscolare e record'; renderProgress(); }
@@ -3142,7 +3196,7 @@ function renderNav(){
     var b = document.createElement('button'); b.type = 'button'; b.className = 'navbtn'; b.setAttribute('data-view', x[0]);
     b.setAttribute('aria-selected', x[0] === currentView ? 'true' : 'false');
     b.innerHTML = '<svg viewBox="0 0 24 24">' + x[2] + '</svg>' + x[1];
-    b.addEventListener('click', function(){ showView(x[0]); });
+    b.addEventListener('click', function(){ if(x[0] === 'workout') wlist = true; showView(x[0]); });
     nav.appendChild(b);
   });
 }
