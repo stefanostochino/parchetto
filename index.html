@@ -631,6 +631,58 @@ input,textarea,[contenteditable="true"],[contenteditable=""]{-webkit-user-select
 input[type="range"],input[type="checkbox"],input[type="radio"],input[type="button"],input[type="submit"]{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 img,svg,a{-webkit-user-drag:none}
 .sndrow input[type="range"]{flex:1;min-width:0;height:46px;accent-color:var(--accent)}
+
+/* ---------- tempo, fatica, obiettivo ---------- */
+.wstats{margin:0 0 12px}
+.wst{display:flex;flex-wrap:wrap;gap:6px}
+.wst span{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:5px 10px;font-size:13.5px;color:var(--muted)}
+.wst b{color:var(--ink);font-weight:700}
+.wlive{margin-top:8px;background:var(--iso);color:var(--iso-ink);border-radius:10px;padding:7px 11px;font-size:14px;font-weight:600;display:inline-block}
+.wlive.done{background:var(--fig-bg);color:var(--ink)}
+.exmeta{appearance:none;border:none;background:transparent;padding:4px 0 0;margin:0;font:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;text-align:left}
+.journey{background:var(--fig-bg);border-radius:12px;padding:10px 12px;margin:10px 0 0}
+.jhead{font-size:14px;color:var(--muted);margin-bottom:6px}.jhead b{color:var(--ink)}
+.jrow{display:flex;align-items:flex-start;gap:8px}
+.jarrow{margin-top:14px}
+.jpct{margin-top:6px}
+.jcol{flex:1;min-width:0;display:flex;flex-direction:column}
+.jcol span{font-size:12px;color:var(--muted)}
+.jcol b{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.1}
+.jarrow{font-size:22px;color:var(--muted);flex:none}
+.jpct{flex:none;font-family:var(--display);font-weight:800;font-size:22px;padding:4px 8px;border-radius:9px;background:var(--card)}
+.jpct.up{color:var(--done)}.jpct.down{color:var(--l4)}
+.jrpe{font-size:12.5px;color:var(--muted);margin-top:2px}
+.rpelist{display:flex;flex-direction:column;gap:12px}
+.rperow b{display:block;font-weight:700;margin-bottom:6px}
+.rpebtns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.rpebtns button{appearance:none;border:1.5px solid var(--line);background:var(--card);color:var(--ink);border-radius:11px;padding:7px 2px;font-weight:600;font-size:12.5px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:58px}
+.rpebtns button span{font-size:22px;line-height:1}
+.rpebtns button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:var(--bg)}
+#btn-rpe{display:block;margin-top:6px}
+#btn-rpe[hidden]{display:none}
+.sclist{display:flex;flex-direction:column;gap:8px}
+.scrow{display:flex;align-items:center;gap:10px;background:var(--fig-bg);border-radius:12px;padding:9px 11px}
+.scrow .sw{width:12px;height:12px;border-radius:50%;flex:none}
+.scrow > div:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column}
+.scrow small{color:var(--muted);font-size:12.5px}
+.sctr{font-size:11.5px;color:var(--muted)}
+.scavg{text-align:right;font-family:var(--display);font-weight:800;font-size:22px;line-height:1;flex:none;display:flex;flex-direction:column}
+.scavg small{font-family:var(--body);font-weight:500;font-size:11px;color:var(--muted)}
+.hgoal{appearance:none;width:100%;display:flex;flex-direction:column;gap:8px;text-align:left;background:#fff7d6;color:#111;border:2.5px solid #111;border-radius:20px;padding:14px 16px;margin:0 0 14px;cursor:pointer;font:inherit}
+.hgoal:active{transform:translateY(1px)}
+.hg-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.hg-top b{font-weight:700;font-size:15px}
+.hg-n{font-family:var(--display);font-weight:800;font-size:30px;line-height:1}
+.hg-n small{font-size:18px;opacity:.6}
+.hg-bar{display:block;height:14px;border-radius:99px;background:rgba(0,0,0,.12);overflow:hidden}
+.hg-bar i{display:block;height:100%;background:#111;border-radius:99px;transition:width .5s ease}
+.hgoal.ok .hg-bar i{background:#12805c}
+.hg-days{display:flex;gap:6px}
+.gd{flex:1;text-align:center;font-size:12px;font-weight:700;padding:4px 0;border-radius:8px;background:rgba(0,0,0,.07);color:rgba(0,0,0,.55)}
+.gd.on{background:#111;color:#FDBE16}
+.gd.today{box-shadow:inset 0 0 0 2px #111}
+.hg-msg{font-size:13.5px;font-weight:600;color:#3b3000}
+.hgoal.ok .hg-msg{color:#0b5e43}
 </style>
 </head>
 <body>
@@ -660,6 +712,7 @@ img,svg,a{-webkit-user-drag:none}
     <div class="home">
       <div class="hhead"><div class="hlogo" aria-hidden="true"><img src="data:image/png;base64,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" alt=""></div>
         <div><h2>SCHEDONE</h2><p id="home-week"></p></div><button class="setbtn home" id="home-set" type="button" aria-label="Impostazioni"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
+      <button class="hgoal" type="button" id="home-goal" aria-label="Obiettivo della settimana"></button>
       <button class="hbig" type="button" data-go-view="workout">
         <span class="hbig-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M2 10v4M22 10v4M6 12h12"/></svg></span>
         <span class="hbig-txt"><span class="hbig-t">Allenamento</span><span class="hbig-n" id="home-next"></span><span class="hbig-h" id="home-hint"></span></span>
@@ -683,6 +736,7 @@ img,svg,a{-webkit-user-drag:none}
     </div>
     <div id="workout-full">
     <p class="intro" id="workout-intro"></p>
+    <div class="wstats" id="workout-stats"></div>
     <ul class="rules" id="workout-rules"></ul>
     <div id="workout-body"></div>
     <div class="complete">
@@ -692,6 +746,7 @@ img,svg,a{-webkit-user-drag:none}
         <button class="primary" id="btn-complete" type="button">Segna allenamento completato</button>
         <button class="ghostbtn" id="btn-tocal" type="button">Aggiungi al calendario del telefono</button>
       </div>
+      <button class="linkbtn" id="btn-rpe" type="button" hidden>Dai o cambia il voto di fatica di oggi</button>
     </div>
     <div class="foot"><button class="reset" id="reset" type="button">Azzera i set spuntati di questo allenamento</button></div>
     </div>
@@ -981,7 +1036,7 @@ var RULES = {
 
 /* ================= STATO ================= */
 var STORE_KEY = 'parchetto-app-v1';
-var store = { history:[], custom:[], customEx:[], timers:[], log:{}, vsel:{}, settings:{autoCal:true}, plan:{}, targets:{} };
+var store = { history:[], custom:[], customEx:[], timers:[], log:{}, vsel:{}, settings:{autoCal:true}, plan:{}, targets:{}, sess:{}, rpe:{} };
 try { var raw = localStorage.getItem(STORE_KEY); if(raw){ var p = JSON.parse(raw); if(p && typeof p === 'object') store = Object.assign(store, p); } } catch(e){}
 ['history','custom','customEx','timers'].forEach(function(k){ if(!Array.isArray(store[k])) store[k] = []; });
 store.customEx.forEach(registerUserEx);
@@ -995,7 +1050,7 @@ function migrateTemplates(){
   }
   store.settings.migratedV2 = true; save();
 }
-['log','vsel','settings','plan','targets'].forEach(function(k){ if(!store[k] || typeof store[k] !== 'object') store[k] = {}; });
+['log','vsel','settings','plan','targets','sess','rpe'].forEach(function(k){ if(!store[k] || typeof store[k] !== 'object') store[k] = {}; });
 if(store.settings.autoCal == null) store.settings.autoCal = true;
 delete store.sets;
 function save(){ try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch(e){} }
@@ -1101,9 +1156,11 @@ function workoutDone(w){
   });
 }
 function afterLog(){
+  touchSession(currentId);
   save();
   var w = getWorkout(currentId);
-  if(w && workoutDone(w) && addHistoryEntry(todayISO(), w.id)){ toast('Allenamento completato: segnato nel calendario'); updateCompleteStatus(); }
+  if(w && workoutDone(w) && addHistoryEntry(todayISO(), w.id)){ updateCompleteStatus(); finishWorkout(w); }
+  paintWorkoutStats();
 }
 
 /* ================= VISTA ALLENAMENTO ================= */
@@ -1355,7 +1412,8 @@ function itemCard(raw, idx, num, w){
   var sub = raw.variants ? e.name + ' · ' + rxText(it)
     : it.parts ? it.sets + ' set · ' + it.value + ' ' + MODES[it.mode].long + ' per set' + (it.sub ? ' · ' + it.sub : '')
     : rxText(it) + ' · ' + e.cat;
-  card.innerHTML = '<div class="card-head"><div class="num">' + num + '</div><div><h2>' + esc(title) + '</h2><p>' + esc(sub) + '</p></div></div>';
+  card.innerHTML = '<div class="card-head"><div class="num">' + num + '</div><div><h2>' + esc(title) + '</h2><p>' + esc(sub) + '</p>' + exMetaLine(e.id) + '</div></div>';
+  var pm = card.querySelector('[data-prog-ex]'); if(pm) pm.addEventListener('click', function(){ openSheet(e.id); });
   if(raw.variants){
     var vt = document.createElement('div'); vt.className = 'vtabs'; vt.style.padding = '10px 14px 0'; vt.style.margin = '0';
     raw.variants.forEach(function(v, vi){
@@ -1400,7 +1458,7 @@ function renderWorkout(id, keepScroll){
     body.appendChild(itemCard(raw, i, i + 1, w));
   });
   if(!w.items.length) body.insertAdjacentHTML('beforeend', '<div class="emptybox">Questo allenamento non ha ancora esercizi. Aggiungili dalla sezione Crea.</div>');
-  renderTabs(); updateCompleteStatus();
+  renderTabs(); updateCompleteStatus(); paintWorkoutStats();
   if(keepScroll) window.scrollTo(0, y);
 }
 
@@ -1408,6 +1466,7 @@ function updateCompleteStatus(){
   var done = store.history.some(function(h){ return h.date === todayISO() && h.day === currentId; });
   document.getElementById('complete-status').classList.toggle('show', done);
   document.getElementById('btn-complete').textContent = done ? 'Già segnato per oggi' : 'Segna completato anche se non hai finito';
+  var rb = document.getElementById('btn-rpe'); if(rb) rb.hidden = !done || !rpeExercises(getWorkout(currentId), todayISO()).length;
 }
 
 /* ---------- correzione set ---------- */
@@ -1449,7 +1508,8 @@ function addHistoryEntry(dateStr, wid){
 function removeHistoryEntry(dateStr, wid){ var i = store.history.findIndex(function(h){ return h.date === dateStr && h.day === wid; }); if(i > -1){ var h = store.history[i]; if(NATIVE && h.eventId){ try { NATIVE.calendarDelete(h.eventId); } catch(e){} } store.history.splice(i,1); save(); } }
 
 document.getElementById('btn-complete').addEventListener('click', function(){
-  if(addHistoryEntry(todayISO(), currentId)) toast('Allenamento segnato nel calendario');
+  var w = getWorkout(currentId);
+  if(addHistoryEntry(todayISO(), currentId)){ updateCompleteStatus(); if(w) finishWorkout(w); else toast('Allenamento segnato nel calendario'); }
   updateCompleteStatus();
 });
 document.getElementById('btn-tocal').addEventListener('click', function(){
@@ -1591,7 +1651,8 @@ function openSheet(id){
   if(hist.length){
     var last = hist[hist.length - 1];
     var lastTxt = last.mode === 'load' && last.topKg ? 'carico max ' + kgText(last.topKg) + ', miglior set ' + valText(last.mode, last.best) : isVolumeMode(last.mode) ? 'totale ' + valText(last.mode, last.total) : 'miglior set ' + valText(last.mode, last.best);
-    h += '<div class="rxbox"><b>Il tuo ultimo:</b> ' + fmtDate(last.date) + ' · ' + lastTxt + ' <button class="linkbtn" type="button" data-prog>Vedi progressi</button></div>';
+    h += journeyHtml(e, hist) + '<div class="rxbox"><b>Il tuo ultimo:</b> ' + fmtDate(last.date) + ' · ' + lastTxt + ' <button class="linkbtn" type="button" data-prog>Vedi progressi</button></div>';
+    if(hist.length >= 2){ var an0 = analyse(e, hist); h += '<div class="advice adv-' + an0.cls + '">' + an0.html + '</div>'; }
   }
   if(members.length > 1 && !e.user){
     var isGym = e.disc === 'gym';
@@ -1699,7 +1760,7 @@ function renderBuilder(){
     store.custom.forEach(function(c){
       var card = document.createElement('div'); card.className = 'mycard';
       card.innerHTML = '<div class="top"><span class="sw" style="background:' + c.color + '"></span><h3></h3></div>'
-        + '<div class="info">' + c.items.length + ' esercizi · circa ' + estimateMin(c.items) + ' min</div>'
+        + '<div class="info">' + c.items.length + ' esercizi · circa ' + estimateMin(c.items) + ' min' + (wStats(c.id).avg ? ' · <b>media reale ' + wStats(c.id).avg + ' min</b>' : '') + '</div>'
         + '<div class="thumbs">' + c.items.slice(0,6).map(function(i){ return '<div class="fxbox">' + fx(i.ex) + '</div>'; }).join('') + '</div>'
         + '<div class="acts"><button class="primary" type="button" data-a="open">Apri</button><button class="ghostbtn" type="button" data-a="edit">Modifica</button><button class="dangerbtn" type="button" data-a="del">Elimina</button></div>';
       card.querySelector('h3').textContent = c.name;
@@ -1875,7 +1936,163 @@ function renderHome(){
   var mon = weekStart(new Date());
   var wk = store.history.filter(function(h){ return dparse(h.date) >= mon; }).length;
   document.getElementById('home-week').textContent = wk ? wk + (wk === 1 ? ' allenamento' : ' allenamenti') + ' questa settimana' : 'Nessun allenamento questa settimana: è il momento giusto';
+  paintGoal();
 }
+
+
+/* ================= TEMPO, FATICA, OBIETTIVO SETTIMANALE ================= */
+// Tempo: parte al primo set spuntato della giornata e si chiude all'ultimo.
+function touchSession(wid){
+  if(!wid) return;
+  var k = todayISO() + '|' + wid, s = store.sess[k], now = Date.now();
+  if(!s) store.sess[k] = {t0:now, t1:now}; else s.t1 = now;
+}
+function sessMin(s){ return s && s.t1 > s.t0 ? Math.round((s.t1 - s.t0) / 60000) : 0; }
+function validMin(m){ return m >= 5 && m <= 240; }
+function durText(m){ return m >= 60 ? Math.floor(m / 60) + ' h ' + (m % 60 ? (m % 60) + ' min' : '') : m + ' min'; }
+function wStats(wid){
+  var out = {count:0, start:null, avg:0, last:0, trend:[]};
+  store.history.forEach(function(h){ if(h.day !== wid) return; out.count++; if(!out.start || h.date < out.start) out.start = h.date; });
+  Object.keys(store.log).forEach(function(d){
+    if(out.start && d >= out.start) return;
+    var day = store.log[d];
+    if(Object.keys(day).some(function(k){ return k.indexOf(wid + '|') === 0 && day[k] && day[k].v && day[k].v.some(function(x){ return x != null; }); })) out.start = d;
+  });
+  var mins = Object.keys(store.sess).filter(function(k){ return k.slice(11) === wid; }).sort().map(function(k){ return {d:k.slice(0,10), m:sessMin(store.sess[k])}; })
+    .filter(function(x){ return validMin(x.m) && store.history.some(function(h){ return h.day === wid && h.date === x.d; }); });
+  if(mins.length){ out.avg = Math.round(mins.reduce(function(a, x){ return a + x.m; }, 0) / mins.length); out.last = mins[mins.length-1].m; out.trend = mins.slice(-8); }
+  return out;
+}
+var liveT = null;
+function paintWorkoutStats(){
+  var box = document.getElementById('workout-stats'); if(!box) return;
+  var w = getWorkout(currentId); if(!w){ box.innerHTML = ''; return; }
+  var st = wStats(w.id), today = store.sess[todayISO() + '|' + w.id];
+  var done = store.history.some(function(h){ return h.date === todayISO() && h.day === w.id; });
+  var parts = [];
+  if(st.start) parts.push('<span><b>Iniziata il</b> ' + fmtDate(st.start) + (dparse(st.start).getFullYear() !== new Date().getFullYear() ? ' ' + dparse(st.start).getFullYear() : '') + '</span>');
+  parts.push('<span><b>' + st.count + '</b> ' + (st.count === 1 ? 'allenamento fatto' : 'allenamenti fatti') + '</span>');
+  if(st.avg) parts.push('<span><b>' + durText(st.avg) + '</b> in media</span>');
+  var live = '';
+  if(today && !done){ var m = Math.max(1, Math.round((Date.now() - today.t0) / 60000)); if(m <= 240) live = '<div class="wlive">⏱ In corso da <b>' + durText(m) + '</b>' + (st.avg ? ' · di solito ' + durText(st.avg) : '') + '</div>'; }
+  else if(today && done && validMin(sessMin(today))) live = '<div class="wlive done">✓ Oggi: <b>' + durText(sessMin(today)) + '</b>' + (st.avg ? ' · media ' + durText(st.avg) : '') + '</div>';
+  box.innerHTML = (st.count || st.start ? '<div class="wst">' + parts.join('') + '</div>' : '') + live;
+}
+setInterval(function(){ if(currentView === 'workout') paintWorkoutStats(); }, 30000);
+
+// Voto di fatica per esercizio (1 facile … 4 al limite)
+var RPE = [{v:1, e:'😌', l:'Facile'}, {v:2, e:'🙂', l:'Giusto'}, {v:3, e:'😤', l:'Duro'}, {v:4, e:'🥵', l:'Al limite'}];
+function rpeOf(exId, d){ return store.rpe[d] && store.rpe[d][exId] || 0; }
+function rpeExercises(w, d){
+  if(!w) return [];
+  var seen = {}, out = [], day = store.log[d] || {};
+  w.items.forEach(function(raw, idx){
+    if(raw.note || raw.suggest) return;
+    var r = resolve(raw, w.id, idx), e = day[r.key];
+    if(e && e.ex && LIBMAP[e.ex] && e.v.some(function(x){ return x != null; }) && !seen[e.ex]){ seen[e.ex] = 1; out.push(e.ex); }
+  });
+  return out;
+}
+function finishWorkout(w){
+  var d = todayISO(), m = sessMin(store.sess[d + '|' + w.id]);
+  var msg = 'Allenamento completato' + (validMin(m) ? ' in ' + durText(m) : '') + ': segnato nel calendario';
+  var exs = rpeExercises(w, d);
+  if(!exs.length){ toast(msg); return; }
+  setTimeout(function(){ openRpeSheet(w, d, msg); }, 450);
+}
+function openRpeSheet(w, d, msg){
+  var exs = rpeExercises(w, d); if(!exs.length) return;
+  var cur = {}; exs.forEach(function(id){ cur[id] = rpeOf(id, d); });
+  var h = '<div class="sheet-top"><h2 id="sheet-title">Com’è andata?</h2><button class="xbtn" type="button" data-close aria-label="Chiudi">✕</button></div>'
+    + '<p class="muscles">' + esc(msg || w.name) + '. Dai un voto di fatica a ogni esercizio: lo uso per dirti quando alzare carichi o ripetizioni.</p><div class="rpelist">';
+  exs.forEach(function(id){
+    h += '<div class="rperow"><b>' + esc(LIBMAP[id].name) + '</b><div class="rpebtns" data-ex="' + id + '">'
+      + RPE.map(function(r){ return '<button type="button" data-v="' + r.v + '" aria-pressed="' + (cur[id] === r.v) + '"><span>' + r.e + '</span>' + r.l + '</button>'; }).join('') + '</div></div>';
+  });
+  h += '</div><div class="actionrow" style="margin-top:14px"><button class="primary" type="button" data-save>Salva</button><button class="ghostbtn" type="button" data-skip>Salta</button></div>';
+  sheetPanel.innerHTML = h; openSheetShell();
+  sheetPanel.querySelectorAll('.rpebtns').forEach(function(g){
+    g.querySelectorAll('button').forEach(function(b){ b.addEventListener('click', function(){
+      var v = +b.getAttribute('data-v'), id = g.getAttribute('data-ex');
+      cur[id] = cur[id] === v ? 0 : v;
+      g.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-pressed', String(+x.getAttribute('data-v') === cur[id])); });
+    }); });
+  });
+  sheetPanel.querySelector('[data-skip]').addEventListener('click', closeSheet);
+  sheetPanel.querySelector('[data-save]').addEventListener('click', function(){
+    var any = false; store.rpe[d] = store.rpe[d] || {};
+    exs.forEach(function(id){ if(cur[id]){ store.rpe[d][id] = cur[id]; any = true; } else delete store.rpe[d][id]; });
+    if(!Object.keys(store.rpe[d]).length) delete store.rpe[d];
+    save(); closeSheet(); if(any) toast('Voti salvati: li trovi nei progressi di ogni esercizio');
+  });
+}
+
+// "Da dove sei partito → dove sei ora"
+function sessText(h){
+  if(h.mode === 'load' && h.topKg) return kgText(h.topKg) + ' · ' + h.best + ' rip';
+  return valText(h.mode, isVolumeMode(h.mode) ? h.total : h.best);
+}
+function journeyHtml(e, hist){
+  if(!hist.length) return '';
+  var a = hist[0], b = hist[hist.length-1], n = hist.length;
+  var weeks = Math.max(0, Math.round((dparse(b.date) - dparse(a.date)) / (7*86400000)));
+  var head = 'Fatto <b>' + n + (n === 1 ? ' volta' : ' volte') + '</b>' + (n > 1 ? (weeks ? ' in ' + weeks + (weeks === 1 ? ' settimana' : ' settimane') : ' questa settimana') : '');
+  var rp = rpeOf(e.id, b.date), rpt = rp ? ' <span class="jrpe">' + RPE[rp-1].e + ' ' + RPE[rp-1].l.toLowerCase() + '</span>' : '';
+  if(n === 1) return '<div class="journey"><div class="jhead">' + head + '</div><div class="jrow"><div class="jcol"><span>Partenza · ' + fmtDate(a.date) + '</span><b>' + sessText(a) + '</b>' + rpt + '</div></div></div>';
+  var va = a.mode === 'load' && a.topKg && b.topKg ? a.topKg : metric(a), vb = a.mode === 'load' && a.topKg && b.topKg ? b.topKg : metric(b);
+  var pct = va ? Math.round((vb - va) / va * 100) : 0;
+  return '<div class="journey"><div class="jhead">' + head + '</div><div class="jrow">'
+    + '<div class="jcol"><span>Partenza · ' + fmtDate(a.date) + '</span><b>' + sessText(a) + '</b></div><div class="jarrow" aria-hidden="true">→</div>'
+    + '<div class="jcol"><span>Ora · ' + fmtDate(b.date) + '</span><b>' + sessText(b) + '</b>' + rpt + '</div>'
+    + '<div class="jpct ' + (pct > 0 ? 'up' : pct < 0 ? 'down' : '') + '">' + (pct > 0 ? '+' : '') + pct + '%</div></div></div>';
+}
+function exMetaLine(exId){
+  var hist = exerciseHistory(exId); if(!hist.length) return '';
+  var a = hist[0], b = hist[hist.length-1], t = 'Fatto ' + hist.length + (hist.length === 1 ? ' volta' : ' volte');
+  if(hist.length > 1 && sessText(a) !== sessText(b)) t += ' · da ' + sessText(a) + ' a ' + sessText(b);
+  return '<button type="button" class="exmeta" data-prog-ex>' + esc(t) + ' ›</button>';
+}
+function schedeCard(){
+  var rows = allWorkouts().map(function(w){ return {w:w, st:wStats(w.id)}; }).filter(function(x){ return x.st.count; });
+  if(!rows.length) return '';
+  return '<div class="pcard"><h3>Le tue schede</h3><p class="sub">Da quando le fai, quante volte e quanto dura in media un allenamento (dal primo all’ultimo set spuntato)</p><div class="sclist">'
+    + rows.map(function(x){
+      var tr = x.st.trend.length > 1 ? '<span class="sctr">durate recenti: ' + x.st.trend.map(function(t){ return t.m; }).join(' · ') + ' min</span>' : '';
+      return '<div class="scrow"><span class="sw" style="background:' + x.w.color + '"></span><div><b>' + esc(x.w.name) + '</b><small>dal ' + fmtDate(x.st.start) + ' · ' + x.st.count + (x.st.count === 1 ? ' volta' : ' volte') + '</small>' + tr + '</div><div class="scavg">' + (x.st.avg ? durText(x.st.avg) + '<small>media</small>' : '—<small>durata</small>') + '</div></div>';
+    }).join('') + '</div></div>';
+}
+
+// Obiettivo settimanale in home
+function weekGoal(){ return Math.max(1, Math.min(14, store.settings.weekGoal || 3)); }
+function paintGoal(){
+  var b = document.getElementById('home-goal'); if(!b) return;
+  var mon = weekStart(new Date()), goal = weekGoal();
+  var list = store.history.filter(function(h){ return dparse(h.date) >= mon; });
+  var n = list.length, pct = Math.min(100, Math.round(n / goal * 100)), ok = n >= goal;
+  var days = ['L','M','M','G','V','S','D'], todayI = (new Date().getDay() + 6) % 7;
+  var dots = days.map(function(l, i){ var d = new Date(mon); d.setDate(d.getDate() + i); var ds = iso(d);
+    var has = list.some(function(h){ return h.date === ds; });
+    return '<span class="gd' + (has ? ' on' : '') + (i === todayI ? ' today' : '') + '">' + l + '</span>'; }).join('');
+  var left = goal - n;
+  b.classList.toggle('ok', ok);
+  b.innerHTML = '<span class="hg-top"><b>Obiettivo della settimana</b><span class="hg-n">' + n + '<small> / ' + goal + '</small></span></span>'
+    + '<span class="hg-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + goal + '" aria-valuenow="' + n + '"><i style="width:' + pct + '%"></i></span>'
+    + '<span class="hg-days">' + dots + '</span>'
+    + '<span class="hg-msg">' + (ok ? (n > goal ? 'Obiettivo superato: ' + n + ' allenamenti! 💪' : 'Obiettivo raggiunto! 💪') : 'Ne ' + (left === 1 ? 'manca 1' : 'mancano ' + left) + ' · tocca per cambiare obiettivo') + '</span>';
+}
+function openGoalSheet(){
+  var g = weekGoal();
+  sheetPanel.innerHTML = '<div class="setsheet"><div class="sheet-top"><h2 id="sheet-title">Obiettivo settimanale</h2><button class="xbtn" type="button" data-close aria-label="Chiudi">✕</button></div>'
+    + '<p class="muscles">Quanti allenamenti vuoi fare ogni settimana? La barra in home si riempie a ogni allenamento completato e riparte da zero il lunedì.</p>'
+    + '<div class="bigstep"><button type="button" data-d="-1" aria-label="Meno">−</button><output id="gv">' + g + '</output><button type="button" data-d="1" aria-label="Più">+</button></div><div class="unit">allenamenti a settimana</div>'
+    + '<div class="actionrow"><button class="primary" type="button" data-save>Salva</button></div></div>';
+  openSheetShell();
+  var out = sheetPanel.querySelector('#gv');
+  sheetPanel.querySelectorAll('[data-d]').forEach(function(b){ b.addEventListener('click', function(){ g = Math.max(1, Math.min(14, g + +b.getAttribute('data-d'))); out.textContent = g; }); });
+  sheetPanel.querySelector('[data-save]').addEventListener('click', function(){ store.settings.weekGoal = g; save(); closeSheet(); paintGoal(); toast('Obiettivo: ' + g + (g === 1 ? ' allenamento' : ' allenamenti') + ' a settimana'); });
+}
+document.getElementById('home-goal').addEventListener('click', openGoalSheet);
+document.getElementById('btn-rpe').addEventListener('click', function(){ var w = getWorkout(currentId); if(w) openRpeSheet(w, todayISO(), w.name); });
 
 /* ================= PROGRESSI ================= */
 var MONTHS = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -1972,10 +2189,20 @@ function analyse(e, hist){
   var mode = hist[hist.length-1].mode, vol = isVolumeMode(mode);
   var vals = hist.map(metric);
   var last = vals[vals.length-1], first = vals[0], rec = Math.max.apply(null, vals);
+  var rpL = hist.slice(-2).map(function(h){ return rpeOf(e.id, h.date); }), rpLast = rpL[rpL.length - 1];
   if(mode === 'load' && hist.length >= 2){
     var l2 = hist.slice(-2), tr = e.rx.value;
     if(l2.every(function(h){ return h.topKg > 0 && h.minReps >= tr; }) && l2[0].topKg === l2[1].topKg){
+      if(rpLast === 4) return {cls:'', html:'Hai completato tutte le ripetizioni (' + tr + ') con <b>' + kgText(l2[1].topKg) + '</b>, ma l’ultima volta l’hai segnata <b>al limite</b> 🥵: resta su questo peso ancora una sessione. Quando ti sembrerà “giusto”, sali di 2,5 kg.'};
+      if(rpL.every(function(r){ return r && r <= 2; })) return {cls:'good', html:'Tutte le ripetizioni (' + tr + ') con <b>' + kgText(l2[1].topKg) + '</b> nelle ultime 2 sessioni, ed erano comode: <b>alza il carico di 2,5 kg</b> (1–2 kg negli esercizi piccoli, come alzate e curl).'};
       return {cls:'good', html:'Hai completato tutte le ripetizioni (' + tr + ') con <b>' + kgText(l2[1].topKg) + '</b> nelle ultime 2 sessioni: è il momento di aumentare il carico di 2,5 kg (1–2 kg negli esercizi piccoli, come alzate e curl).'};
+    }
+  }
+  if(mode === 'load' && hist.length >= 2){
+    var m2 = hist.slice(-2);
+    if(m2.every(function(h){ return h.topKg > 0 && h.minReps < e.rx.value; }) && rpL.every(function(r){ return r >= 3; })){
+      var lower = Math.round(m2[1].topKg * 0.9 / 2.5) * 2.5;
+      return {cls:'warn', html:'Nelle ultime 2 sessioni non hai chiuso tutte le ripetizioni (obiettivo ' + e.rx.value + ') e le hai segnate dure: <b>scendi a circa ' + kgText(lower) + '</b> oppure allunga il recupero di 30″, poi riprova a salire.'};
     }
   }
   var members = LIB.filter(function(x){ return x.path === e.path && x.step > e.step; }).sort(function(a,b){ return a.step - b.step; });
@@ -1983,6 +2210,9 @@ function analyse(e, hist){
   if(hist.length === 1) return {cls:'', html:'Prima sessione registrata. Dalla prossima vedrai la tendenza.'};
   var target = e.rx.value;
   var hitTarget = !vol && vals.slice(-2).every(function(v){ return v >= target; }) && hist.length >= 2;
+  if(mode !== 'load' && hitTarget && rpLast === 4) return {cls:'', html:'Hai raggiunto l’obiettivo (' + valText(mode, target) + '), ma l’ultima volta eri <b>al limite</b> 🥵: consolida ancora una sessione' + (next ? ' prima di passare a <b>' + esc(next.name) + '</b>.' : '.')};
+  if(mode !== 'load' && hitTarget && !next && rpL.every(function(r){ return r && r <= 2; })) return {cls:'good', html:'Obiettivo raggiunto e comodo nelle ultime 2 sessioni: <b>aggiungi ' + (mode === 'hold' ? '5–10 secondi' : '1–2 ripetizioni') + '</b> per set.'};
+  if(mode !== 'load' && !vol && hist.length >= 2 && vals.slice(-2).every(function(v){ return v < target; }) && rpL.every(function(r){ return r >= 3; })) return {cls:'warn', html:'Nelle ultime 2 sessioni sei rimasto sotto l’obiettivo (' + valText(mode, target) + ') e le hai segnate dure: allunga il recupero di 30″' + (e.step > 1 ? ' o torna per una settimana al passo precedente della progressione.' : '.')};
   if(mode !== 'load' && hitTarget && next) return {cls:'good', html:'Hai raggiunto l’obiettivo (' + valText(mode, target) + ') nelle ultime 2 sessioni: sei pronto per la progressione successiva, <b>' + esc(next.name) + '</b>.', next:next.id};
   var recent = vals.slice(-4), older = vals.slice(0, -4);
   if(hist.length >= 5 && Math.max.apply(null, recent) <= Math.max.apply(null, older)){
@@ -2006,6 +2236,7 @@ function renderProgress(){
     if(has) streak++; else if(i > 0) break; }
   root.insertAdjacentHTML('beforeend', '<div class="kpis"><div class="kpi"><b>' + sess28 + '</b><span>sessioni in 4 settimane</span></div><div class="kpi"><b>' + mv.sets + '</b><span>set registrati in 4 settimane</span></div><div class="kpi"><b>' + streak + '</b><span>settimane di fila attive</span></div></div>');
 
+  root.insertAdjacentHTML('beforeend', schedeCard());
   root.insertAdjacentHTML('beforeend', '<div class="pcard"><h3>Costanza</h3><p class="sub">Sessioni per settimana, colorate per allenamento</p>' + svgWeeks() + '</div>');
 
   // Mappa muscolare
@@ -2077,6 +2308,7 @@ function renderProgress(){
       return '<div class="tg"><span>' + fmtDate(t.date) + '</span><span>' + fromT + ' → <b>' + toT + '</b>' + (t.dFrom ? '<small class="tgd">blocchi ' + t.dFrom + ' → ' + t.dTo + '</small>' : '') + '</span><span class="' + (up ? 'up' : 'down') + '">' + (up ? '▲ +' : '▼ −') + diff + '</span></div>';
     }).join('') + '</div>');
   }
+  pc.insertAdjacentHTML('beforeend', journeyHtml(e, hist));
   var an = analyse(e, hist);
   var ad = document.createElement('div'); ad.className = 'advice adv-' + an.cls; ad.innerHTML = an.html;
   if(an.next){ var b = document.createElement('button'); b.type = 'button'; b.className = 'linkbtn'; b.style.display = 'block'; b.textContent = 'Vedi ' + LIBMAP[an.next].name; b.addEventListener('click', function(){ openSheet(an.next); }); ad.appendChild(b); }
@@ -2178,6 +2410,9 @@ function renderSettings(){
     store.plan = data.plan && typeof data.plan === 'object' ? data.plan : {};
     store.targets = data.targets && typeof data.targets === 'object' ? data.targets : {};
     store.customEx = Array.isArray(data.customEx) ? data.customEx : [];
+    store.sess = data.sess && typeof data.sess === 'object' ? data.sess : {};
+    store.rpe = data.rpe && typeof data.rpe === 'object' ? data.rpe : {};
+    if(data.weekGoal) store.settings.weekGoal = data.weekGoal;
     if(Array.isArray(data.timers)) store.timers = data.timers;
     store.customEx.forEach(registerUserEx);
     save(); document.getElementById('bk-text').value = ''; document.getElementById('bk-restore').hidden = true;
@@ -2185,7 +2420,7 @@ function renderSettings(){
   });
   paintSettings();
 }
-function backupText(){ return 'SCHEDONE-BACKUP ' + JSON.stringify({history:store.history, custom:store.custom, customEx:store.customEx, timers:store.timers, log:store.log, vsel:store.vsel, plan:store.plan, targets:store.targets}); }
+function backupText(){ return 'SCHEDONE-BACKUP ' + JSON.stringify({history:store.history, custom:store.custom, customEx:store.customEx, timers:store.timers, log:store.log, vsel:store.vsel, plan:store.plan, targets:store.targets, sess:store.sess, rpe:store.rpe, weekGoal:store.settings.weekGoal}); }
 function markBackup(){ store.settings.lastBackup = Date.now(); store.settings.lastPrompt = Date.now(); save(); hideBackupBanner(); }
 function doBackup(){
   var txt = backupText();
