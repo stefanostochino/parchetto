@@ -285,6 +285,10 @@ main{max-width:640px;margin:0 auto;padding:var(--s4) var(--s4) calc(var(--nav-h)
 .wdetail .wd-name{flex:1;min-width:0;font-family:var(--display);font-weight:800;font-size:var(--fs-d2);text-transform:uppercase;letter-spacing:.02em;line-height:1.05;word-break:break-word}
 .wdetail input{flex:1;min-width:0;min-height:var(--tap);font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--accent);border-radius:var(--r);padding:0 var(--s3)}
 .wdetail button{flex:none;min-height:var(--tap)}
+.ekcal{display:block;color:var(--muted);font-size:var(--fs-xs)}
+.kpis.k2{margin-top:var(--s2)}
+.kpi span small{display:block;font-size:var(--fs-xs);line-height:1.25;color:var(--muted)}
+.pnote{font-size:var(--fs-xs);color:var(--muted);margin:var(--s2) 0 var(--s3)}
 .emptybox{border:1.5px dashed var(--line);border-radius:var(--r);padding:var(--s5);color:var(--muted);font-size:var(--fs-sm);margin:var(--s3) 0 var(--s4)}
 .field{display:block;margin:0 0 var(--s3)}
 .field span{display:block;font-weight:600;font-size:var(--fs-sm);margin-bottom:var(--s1)}
@@ -2285,6 +2289,159 @@ function renderHome(){
 }
 
 
+/* ================= PROFILO E CALORIE STIMATE =================
+   Dati personali: store.settings.profile = {heightCm, weightKg, weightHistory:[{date, weightKg}]} (viaggia nel backup con le impostazioni).
+   Le kcal NON si salvano: si calcolano ogni volta da peso storico + durata (store.sess) + set registrati (store.log). Sono sempre stime. */
+var PROF = {hMin:100, hMax:250, wMin:30, wMax:300};
+// Unico punto con le costanti. MET (Compendium of Physical Activities, valori prudenti): tecnica/tenute 3,0 · forza/calisthenics 4,0 · corsa e cardio 7,0.
+// La densita' dei set (set/minuto rispetto a 0,33 = circa 3 min a set) sposta i MET di forza/tecnica solo tra 0,85x e 1,2x; il MET finale sta sempre tra 2,5 e 8,0.
+var KCAL = {MET:{tech:3.0, res:4.0, cardio:7.0}, densRef:0.33, densMin:0.85, densMax:1.2, metMin:2.5, metMax:8.0,
+  secPerRep:3, distSpeed:5, restDef:60, transferSec:90, minSets:3};
+function profNum(v, a, b){ return typeof v === 'number' && isFinite(v) && v >= a && v <= b ? v : null; }
+function profileGet(){
+  var p = store.settings.profile, o = {h:null, w:null, hist:[]};
+  if(!p || typeof p !== 'object' || Array.isArray(p)) return o;
+  o.h = profNum(p.heightCm, PROF.hMin, PROF.hMax); o.w = profNum(p.weightKg, PROF.wMin, PROF.wMax);
+  if(Array.isArray(p.weightHistory)) o.hist = p.weightHistory.filter(function(e){ return e && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && profNum(e.weightKg, PROF.wMin, PROF.wMax) !== null; })
+    .map(function(e){ return {date:e.date, weightKg:e.weightKg}; }).sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  return o;
+}
+function profNumParse(s){ s = String(s == null ? '' : s).trim().replace(',', '.'); if(!s) return undefined; if(!/^\d+(\.\d+)?$/.test(s)) return NaN; return parseFloat(s); }
+// salva altezza e/o peso (campo vuoto = invariato). Il peso entra nello storico solo se cambia; nello stesso giorno si corregge la voce di oggi.
+function profileSave(hs, ws){
+  var h = profNumParse(hs), w = profNumParse(ws);
+  if(h === undefined && w === undefined) return {err:'Inserisci almeno altezza o peso'};
+  if(h !== undefined && !(h >= PROF.hMin && h <= PROF.hMax)) return {err:'Altezza non valida: usa un numero tra ' + PROF.hMin + ' e ' + PROF.hMax + ' cm'};
+  if(w !== undefined && !(w >= PROF.wMin && w <= PROF.wMax)) return {err:'Peso non valido: usa un numero tra ' + PROF.wMin + ' e ' + PROF.wMax + ' kg'};
+  var P = profileGet(), old = store.settings.profile, np = (old && typeof old === 'object' && !Array.isArray(old)) ? Object.assign({}, old) : {};
+  np.weightHistory = P.hist;
+  if(P.h != null) np.heightCm = P.h; else delete np.heightCm;
+  if(P.w != null) np.weightKg = P.w; else delete np.weightKg;
+  if(h !== undefined) np.heightCm = Math.round(h * 10) / 10;
+  if(w !== undefined){
+    w = Math.round(w * 10) / 10;
+    var t = todayISO(), hist = np.weightHistory, last = hist[hist.length - 1], same = hist.filter(function(e){ return e.date === t; })[0];
+    if(same) same.weightKg = w; else if(!last || last.weightKg !== w) hist.push({date:t, weightKg:w});
+    np.weightKg = hist.length ? hist[hist.length - 1].weightKg : w;
+  }
+  store.settings.profile = np; save();
+  return {};
+}
+// peso valido alla data: l'ultima voce con data <= a quella dell'allenamento; se non ce n'e', il peso attuale (segnato come non storico)
+function weightAt(P, date){
+  var w = null; P.hist.forEach(function(e){ if(e.date <= date) w = e.weightKg; });
+  if(w !== null) return {kg:w, hist:true};
+  return P.w != null ? {kg:P.w, hist:false} : null;
+}
+function bmiOf(P){ return P.h != null && P.w != null ? P.w / Math.pow(P.h / 100, 2) : null; }
+function kcalPerMin(met, kg){ return met * 3.5 * kg / 200; }     // formula centrale: kcal/min = MET x 3,5 x kg / 200
+function clampN(x, a, b){ return Math.max(a, Math.min(b, x)); }
+// dal registro di quel giorno: set fatti e tempo attivo+recupero per classe (tecnica / forza / cardio); solo lettura
+function sessionLoad(h){
+  var L = {sets:0, nc:0, ex:0, total:0, tail:0, sec:{tech:0, res:0, cardio:0}}, day = store.log[h.date], w = getWorkout(h.day);
+  if(!day) return L;
+  Object.keys(day).forEach(function(k){
+    if(k.indexOf(h.day + '|') !== 0) return;
+    var e = day[k]; if(!e || !e.ex || !Array.isArray(e.v)) return;
+    var done = e.v.filter(function(x){ return typeof x === 'number' && isFinite(x); }); if(!done.length) return;
+    var cls = e.mode === 'min' || e.mode === 'dist' ? 'cardio' : e.mode === 'hold' ? 'tech' : 'res';
+    var raw = w && w.items[+k.split('|')[1]], rs = raw ? (raw.rest != null ? raw.rest : raw.variants && raw.variants[0] ? raw.variants[0].rest : null) : null;
+    rs = typeof rs === 'number' && rs >= 0 && rs <= 300 ? rs : KCAL.restDef;
+    done.forEach(function(x){
+      x = Math.max(0, x);
+      var act = e.mode === 'hold' ? x : e.mode === 'min' ? x * 60 : e.mode === 'dist' ? x / KCAL.distSpeed : x * KCAL.secPerRep;
+      act = Math.min(act, 7200); L.sec[cls] += act + rs; L.total += act + rs;
+    });
+    L.sets += done.length; if(cls !== 'cardio') L.nc += done.length; L.ex++; L.tail += rs;
+  });
+  return L;
+}
+// stima di un allenamento fatto: {kcal, min, kg, wHist, met, src:'reale'|'stimata'} oppure null se i dati non bastano
+function sessionKcal(h){
+  var wt = weightAt(profileGet(), h.date); if(!wt) return null;
+  var L = sessionLoad(h), m = sessMin(store.sess[h.date + '|' + h.day]), src = 'reale';
+  if(!validMin(m)){
+    src = 'stimata';
+    if(L.sets < KCAL.minSets) return null;
+    m = Math.round((L.total - L.tail + (L.ex - 1) * KCAL.transferSec) / 60);
+    if(!validMin(m)) return null;
+  }
+  var tot = L.sec.tech + L.sec.res + L.sec.cardio, met = KCAL.MET.res;
+  if(tot){
+    var f = src === 'reale' && L.nc ? clampN(L.nc / m / KCAL.densRef, KCAL.densMin, KCAL.densMax) : 1;
+    met = (L.sec.cardio * KCAL.MET.cardio + (L.sec.tech * KCAL.MET.tech + L.sec.res * KCAL.MET.res) * f) / tot;
+  }
+  met = clampN(met, KCAL.metMin, KCAL.metMax);
+  return {kcal:Math.round(kcalPerMin(met, wt.kg) * m), min:m, kg:wt.kg, wHist:wt.hist, met:met, src:src};
+}
+function kcalRange(from, to){
+  var r = {kcal:0, n:0, skip:0, low:0};
+  store.history.forEach(function(h){ if(h.date < from || h.date > to) return; var k = sessionKcal(h); if(k){ r.kcal += k.kcal; r.n++; if(k.src !== 'reale') r.low++; } else r.skip++; });
+  return r;
+}
+function fmtInt(n){ return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function fmtDec(n){ return (Math.round(n * 10) / 10).toFixed(1).replace('.', ','); }
+function svgWeight(hist){
+  var pts = hist.slice(-12), W = 320, H = 96, pl = 8, pr = 8, lo = Math.min.apply(null, pts.map(function(e){ return e.weightKg; })), hi = Math.max.apply(null, pts.map(function(e){ return e.weightKg; }));
+  if(hi - lo < 1){ lo -= 0.5; hi += 0.5; }
+  var xy = pts.map(function(e, i){ return [pl + (W - pl - pr) * (pts.length > 1 ? i / (pts.length - 1) : 0.5), 24 + (H - 54) * (1 - (e.weightKg - lo) / (hi - lo))]; });
+  var s = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Andamento del peso: da ' + fmtDec(pts[0].weightKg) + ' a ' + fmtDec(pts[pts.length - 1].weightKg) + ' kg">'
+    + '<polyline fill="none" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="stroke:var(--accent)" points="' + xy.map(function(q){ return q[0].toFixed(1) + ',' + q[1].toFixed(1); }).join(' ') + '"/>';
+  xy.forEach(function(q, i){ s += '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3.5" style="fill:var(--accent)"/>'
+    + (i === 0 || i === xy.length - 1 ? '<text x="' + q[0].toFixed(1) + '" y="' + (q[1] - 7).toFixed(1) + '" text-anchor="' + (i ? 'end' : 'start') + '">' + fmtDec(pts[i].weightKg) + '</text>' : ''); });
+  s += '<text x="' + pl + '" y="' + (H - 6) + '">' + fmtDate(pts[0].date) + '</text><text x="' + (W - pr) + '" y="' + (H - 6) + '" text-anchor="end">' + fmtDate(pts[pts.length - 1].date) + '</text></svg>';
+  return s;
+}
+function openProfileSheet(done){
+  var P = profileGet();
+  sheetPanel.innerHTML = '<div class="setsheet"><div class="sheet-top"><h2 id="sheet-title">Dati personali</h2><button class="xbtn" type="button" data-close aria-label="Chiudi">✕</button></div>'
+    + '<p class="muscles">Restano solo su questo dispositivo e nel tuo backup. Servono a stimare le calorie: sono valori approssimativi.</p>'
+    + '<label class="field"><span>Altezza (cm)</span><input type="text" inputmode="decimal" id="pf-h" autocomplete="off" placeholder="Es. 178"></label>'
+    + '<label class="field"><span>Peso (kg)</span><input type="text" inputmode="decimal" id="pf-w" autocomplete="off" placeholder="Es. 76,5"></label>'
+    + '<p class="sub" id="pf-err" hidden style="color:var(--alert)"></p>'
+    + '<div class="actionrow"><button class="primary" type="button" data-save>Salva</button></div></div>';
+  var hi = sheetPanel.querySelector('#pf-h'), wi = sheetPanel.querySelector('#pf-w'), er = sheetPanel.querySelector('#pf-err');
+  if(P.h != null) hi.value = String(P.h).replace('.', ',');
+  if(P.w != null) wi.value = String(P.w).replace('.', ',');
+  sheetPanel.querySelector('[data-save]').addEventListener('click', function(){
+    var r = profileSave(hi.value, wi.value);
+    if(r.err){ er.textContent = r.err; er.hidden = false; return; }
+    closeSheet(); toast('Dati personali salvati'); if(done) done();
+  });
+  openSheetShell();
+}
+function profileCard(){
+  var P = profileGet(), card = document.createElement('div'); card.className = 'pcard'; card.id = 'prof-card';
+  if(P.w == null){
+    card.innerHTML = '<h3>Dati personali</h3><p class="sub">Completa i dati personali per stimare le calorie</p><div class="actionrow"><button class="ghostbtn" type="button" data-prof>Inserisci i dati</button></div>';
+  } else {
+    var now = new Date(), t = iso(now), d7 = new Date(now), d30 = new Date(now); d7.setDate(d7.getDate() - 6); d30.setDate(d30.getDate() - 29);
+    var wk = kcalRange(iso(weekStart(now)), t), r7 = kcalRange(iso(d7), t), r30 = kcalRange(iso(d30), t), b = bmiOf(P);
+    var prev = P.hist.length > 1 ? P.hist[P.hist.length - 2].weightKg : null, dl = prev != null ? Math.round((P.w - prev) * 10) / 10 : null;
+    var est = function(r){ return r.n ? '≈ ' + fmtInt(r.kcal) : '—'; };
+    card.innerHTML = '<h3>Peso e calorie stimate</h3><p class="sub">Calorie approssimative: peso, durata dell’allenamento e set registrati</p>'
+      + '<div class="kpis"><div class="kpi"><b>' + fmtDec(P.w) + '</b><span>peso (kg)' + (dl ? '<small>' + (dl > 0 ? '+' : '−') + fmtDec(Math.abs(dl)) + ' kg dall’ultima</small>' : '') + '</span></div>'
+      + '<div class="kpi"><b>' + (b !== null ? fmtDec(b) : '—') + '</b><span>BMI' + (b === null ? '<small>manca l’altezza</small>' : '') + '</span></div>'
+      + '<div class="kpi"><b>' + (r30.n ? '≈ ' + fmtInt(r30.kcal / r30.n) : '—') + '</b><span>kcal / allenamento<small>stima, media 30 gg</small></span></div></div>'
+      + '<div class="kpis k2"><div class="kpi"><b>' + est(wk) + '</b><span>kcal stimate<small>questa sett.</small></span></div>'
+      + '<div class="kpi"><b>' + est(r7) + '</b><span>kcal stimate<small>ultimi 7 giorni</small></span></div>'
+      + '<div class="kpi"><b>' + est(r30) + '</b><span>kcal stimate<small>ultimi 30 giorni</small></span></div></div>'
+      + (P.hist.length > 1 ? '<p class="sub" style="margin-top:var(--s3)">Andamento del peso</p>' + svgWeight(P.hist) : '')
+      + '<p class="pnote">Stima con MET × 3,5 × peso ÷ 200 × minuti: non è una misura. '
+      + (r30.low ? r30.low + (r30.low === 1 ? ' allenamento senza durata registrata è calcolato dai set (meno preciso). ' : ' allenamenti senza durata registrata sono calcolati dai set (meno precisi). ') : '')
+      + (r30.skip ? r30.skip + (r30.skip === 1 ? ' allenamento senza dati sufficienti non è contato. ' : ' allenamenti senza dati sufficienti non sono contati. ') : '') + '</p>'
+      + '<div class="actionrow"><button class="ghostbtn" type="button" data-prof>Modifica dati personali</button></div>';
+  }
+  card.querySelectorAll('[data-prof]').forEach(function(b){ b.addEventListener('click', function(){ openProfileSheet(renderProgress); }); });
+  return card;
+}
+function paintProfileSettings(){
+  var box = document.getElementById('set-prof'); if(!box) return;
+  var P = profileGet(), b = bmiOf(P);
+  box.innerHTML = '<div class="kpis"><div class="kpi"><b>' + (P.h != null ? fmtDec(P.h) : '—') + '</b><span>altezza (cm)</span></div><div class="kpi"><b>' + (P.w != null ? fmtDec(P.w) : '—') + '</b><span>peso (kg)</span></div><div class="kpi"><b>' + (b !== null ? fmtDec(b) : '—') + '</b><span>BMI</span></div></div>'
+    + (P.hist.length ? '<p class="pnote">Storico peso: ' + P.hist.slice(-5).reverse().map(function(e){ return fmtDate(e.date) + ' ' + fmtDec(e.weightKg) + ' kg'; }).join(' · ') + (P.hist.length > 5 ? ' · (' + P.hist.length + ' misure)' : '') + '</p>' : '');
+}
+
 /* ================= TEMPO, FATICA, OBIETTIVO SETTIMANALE ================= */
 // Tempo: parte al primo set spuntato della giornata e si chiude all'ultimo.
 function touchSession(wid){
@@ -2581,6 +2738,7 @@ function renderProgress(){
     if(has) streak++; else if(i > 0) break; }
   root.insertAdjacentHTML('beforeend', '<div class="kpis"><div class="kpi"><b>' + sess28 + '</b><span>sessioni in 4 settimane</span></div><div class="kpi"><b>' + mv.sets + '</b><span>set registrati in 4 settimane</span></div><div class="kpi"><b>' + streak + '</b><span>settimane di fila attive</span></div></div>');
 
+  root.appendChild(profileCard());
   root.insertAdjacentHTML('beforeend', schedeCard());
   root.insertAdjacentHTML('beforeend', '<div class="pcard"><h3>Costanza</h3><p class="sub">Sessioni per settimana, colorate per allenamento</p>' + svgWeeks() + '</div>');
 
@@ -2719,6 +2877,7 @@ function renderSettings(){
     + '<label class="sndlbl" for="set-tm-snd">Timer a intervalli (fine di ogni turno)</label><div class="sndrow"><select id="set-tm-snd">' + sndOpts(tmSound()) + '</select><button class="ghostbtn" type="button" data-try="set-tm-snd">▶ Prova</button></div></div>';
   h += '<div class="pcard" id="set-nav-card"><h3>Barra in basso</h3><p class="sub">Scegli le pagine sempre a portata di dito, fino a ' + NAV_MAX + '. Il Menu resta sempre: da lì raggiungi tutto il resto.</p><div class="navpick" id="set-nav"></div></div>';
   h += '<div class="pcard"><h3>Schede di partenza</h3><p class="sub">Rispondi di nuovo alle domande iniziali: le nuove schede si aggiungono a quelle che hai già.</p><button class="ghostbtn" type="button" id="set-ob">Rifai il questionario</button></div>';
+  h += '<div class="pcard" id="set-prof-card"><h3>Dati personali</h3><p class="sub">Altezza e peso servono a stimare le calorie e restano solo su questo dispositivo (e nel tuo backup).</p><div id="set-prof"></div><div class="actionrow"><button class="ghostbtn" type="button" id="set-prof-edit">Modifica</button></div></div>';
   h += '<div class="pcard"><h3>Backup dei dati</h3><p class="sub">Salva tutto quello che hai su questa app: allenamenti fatti e calendario, set registrati e statistiche, schede ed esercizi creati, timer, obiettivi, impostazioni e barra in basso. Usalo per cambiare telefono o per non perdere nulla.</p>'
     + '<div class="actionrow"><button class="primary" type="button" id="bk-copy">' + (NATIVE ? 'Condividi backup' : 'Copia backup') + '</button><button class="ghostbtn" type="button" id="bk-open">Ripristina da backup</button></div>'
     + '<div id="bk-restore" hidden style="margin-top:12px"><textarea id="bk-text" rows="5" style="width:100%;font-size:13px;border:1.5px solid var(--line);border-radius:10px;padding:10px;background:var(--bg);color:var(--ink)" placeholder="Incolla qui il testo del backup"></textarea>'
@@ -2731,6 +2890,8 @@ function renderSettings(){
     var n = 0; store.history.forEach(function(h){ if(!h.eventId){ n++; var was = store.settings.autoCal; store.settings.autoCal = true; syncToPhone(h); store.settings.autoCal = was; } });
     toast(n ? 'Invio ' + n + ' allenamenti al calendario…' : 'Sono già tutti nel calendario');
   });
+  document.getElementById('set-prof-edit').addEventListener('click', function(){ openProfileSheet(paintProfileSettings); });
+  paintProfileSettings();
   document.getElementById('bk-copy').addEventListener('click', doBackup);
   document.getElementById('set-ob').addEventListener('click', obOpen);
   paintNavPick();
@@ -2881,6 +3042,20 @@ function bkTimer(t, i){
   });
   return bkRest(t, o, []);
 }
+function bkProfile(v, p){
+  bkObj(v, p); var o = {};
+  if(v.heightCm !== undefined) o.heightCm = bkNum(v.heightCm, p + '.heightCm', PROF.hMin, PROF.hMax);
+  if(v.weightKg !== undefined) o.weightKg = bkNum(v.weightKg, p + '.weightKg', PROF.wMin, PROF.wMax);
+  if(v.weightHistory !== undefined){
+    var seen = {};
+    o.weightHistory = bkArr(v.weightHistory, p + '.weightHistory', 5000).map(function(e, i){
+      var q = p + '.weightHistory[' + i + ']'; bkObj(e, q);
+      var d = bkDate(e.date, q + '.date'); if(seen[d]) bkFail(q + '.date', 'data ripetuta'); seen[d] = 1;
+      return {date:d, weightKg:bkNum(e.weightKg, q + '.weightKg', PROF.wMin, PROF.wMax)};
+    }).sort(function(a, b){ return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
+  }
+  return bkRest(v, o, []);
+}
 function bkSettings(src, strict){
   bkObj(src, 'settings'); var S = {};
   Object.keys(src).forEach(function(k){
@@ -2892,6 +3067,7 @@ function bkSettings(src, strict){
       else if(k === 'sndVol') S[k] = bkNum(v, p, 0, 200);
       else if(k === 'sndForce' || k === 'autoCal' || k === 'onboarded') S[k] = bkBool(v, p);
       else if(k === 'restSound' || k === 'tmSound') S[k] = bkEnum(v, Object.keys(SOUNDS), p);
+      else if(k === 'profile') S[k] = bkProfile(v, p);
       else if(k === 'weekGoal') S[k] = bkInt(v, p, 1, 14);
       else if(k === 'lastWorkout') S[k] = bkStr(v, p, 64);
       else S[k] = bkClone(v);                                    // impostazione non prevista: si conserva cosi' com'e'
@@ -3082,7 +3258,7 @@ function paintSettings(){ var ac = document.getElementById('set-autocal'); if(ac
   var r2 = document.getElementById('set-tm-snd'); if(r2) r2.value = tmSound();
   var sv = document.getElementById('set-vol'); if(sv){ sv.value = sndVol(); document.getElementById('set-vol-v').textContent = sndVol() + '%'; }
   var sf = document.getElementById('set-force'); if(sf) sf.checked = sndForce();
-  paintNavPick(); }
+  paintProfileSettings(); paintNavPick(); }
 function paintNavPick(){
   var box = document.getElementById('set-nav'); if(!box) return;
   var list = navList(); box.innerHTML = '';
@@ -3119,6 +3295,7 @@ function renderEditor(){
     var r = document.createElement('div'); r.className = 'editor-entry';
     r.innerHTML = '<i style="background:' + colorFor(h) + '"></i><span></span><button type="button" aria-label="Rimuovi">✕</button>';
     r.querySelector('span').textContent = labelFor(h);
+    var kc = sessionKcal(h); if(kc){ var sm = document.createElement('small'); sm.className = 'ekcal'; sm.textContent = kc.min + ' min \u00b7 \u2248 ' + fmtInt(kc.kcal) + ' kcal stimate' + (kc.src === 'stimata' ? ' (dai set)' : ''); r.querySelector('span').appendChild(sm); }
     r.querySelector('button').addEventListener('click', function(){ removeHistoryEntry(h.date, h.day); renderEditor(); renderCalendar(); updateCompleteStatus(); });
     eb.appendChild(r);
   });
